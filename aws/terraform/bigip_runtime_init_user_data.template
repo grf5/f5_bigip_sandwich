@@ -44,14 +44,14 @@ runtime_parameters:
       field: local-ipv4s
       index: 0
       ipcalc: first
-  - name: DATAPLANE_IP
+  - name: CLIENT_IP
     type: metadata
     metadataProvider: 
       environment: aws
       type: network
       field: local-ipv4s
       index: 1
-  - name: DATAPLANE_GATEWAY
+  - name: CLIENT_GATEWAY
     type: metadata
     metadataProvider:
       environment: aws
@@ -59,6 +59,13 @@ runtime_parameters:
       field: local-ipv4s
       index: 1
       ipcalc: first
+  - name: SERVER_IP
+    type: metadata
+    metadataProvider: 
+      environment: aws
+      type: network
+      field: local-ipv4s
+      index: 2
 extension_packages:
   install_operations:
     - extensionType: do
@@ -121,31 +128,43 @@ extension_services:
           admin:
             class: User
             userType: regular
-            password: ${bigipAdminPassword}
+            password: ${bigip_admin_password}
             shell: bash
-          data-vlan:
+          client-vlan:
             class: VLAN
             interfaces:
               - name: '1.1'
                 tagged: false
             mtu: 1500
-          data-self:
+          server-vlan:
+            class: VLAN
+            interfaces:
+              - name: '1.2'
+                tagged: false
+            mtu: 1500
+          client-self:
             class: SelfIp
-            address: "{{{ DATAPLANE_IP }}}"
-            vlan: data-vlan
+            address: "{{{ CLIENT_IP }}}"
+            vlan: client-vlan
             allowService: all
             trafficGroup: traffic-group-local-only
-          data-default-route:
+          server-self:
+            class: SelfIp
+            address: "{{{ SERVER_IP }}}"
+            vlan: server-vlan
+            allowService: all
+            trafficGroup: traffic-group-local-only
+          client-default-route:
             class: Route
-            gw: "{{{ DATAPLANE_GATEWAY }}}"
+            gw: "{{{ CLIENT_GATEWAY }}}"
             network: default
             mtu: 1500
           configSync:
             class: ConfigSync
-            configsyncIp: /Common/data-self/address
+            configsyncIp: /Common/server-self/address
           failoverAddress:
             class: FailoverUnicast
-            address: /Common/data-self/address
+            address: /Common/server-self/address
           failoverGroup:
             class: DeviceGroup
             type: sync-failover
@@ -154,17 +173,17 @@ extension_services:
               - ${cm_secondary_hostname}
             owner: /Common/failoverGroup/members/0
             autoSync: true
-            saveOnAutoSync: false
+            saveOnAutoSync: true
             networkFailover: true
             fullLoadOnSync: false
             asmSync: false
           trust:
             class: DeviceTrust
             localUsername: admin
-            localPassword: ${bigipAdminPassword}
+            localPassword: ${bigip_admin_password}
             remoteHost: ${cm_peer_ip}
             remoteUsername: admin
-            remotePassword: ${bigipAdminPassword}
+            remotePassword: ${bigip_admin_password}
     - extensionType: as3
       type: inline
       value:
@@ -174,27 +193,8 @@ extension_services:
         declaration:
             class: ADC
             schemaVersion: ${f5_as3_schema_version}
-            label: F5 AWS HA Testing
+            label: F5 BIG-IP AWS
             remark: Tested with 16.1
-            Health_Monitor:
-                class: Tenant
-                Health_Monitoring:
-                    class: Application
-                    health_monitoring_http:
-                        class: Service_HTTP
-                        virtualAddresses:
-                            - ${monitoring_address}
-                        profileHTTP: basic
-                        virtualType: standard
-                        virtualPort: 443
-                        iRules:
-                            - Monitoring_iRule
-                    Monitoring_iRule:
-                        class: iRule
-                        iRule: |-
-                            when HTTP_REQUEST {
-                            HTTP::respond 200 content "OK"
-                            }
             IP-Forwarding:
                 class: Tenant
                 default_forwarding_ipv4:
@@ -257,8 +257,8 @@ post_onboard_enabled:
 EOF
 
 # Add licensing if necessary
-if [ "${bigipLicenseType}" != "PAYG" ]; then
-  echo "bigip_ready_enabled:\n  - name: licensing\n    type: inline\n    commands:\n      - tmsh install sys license registration-key ${bigipLicense}\n" >> /config/cloud/runtime-init-conf.yaml
+if [ "${bigip_license_type}" != "PAYG" ]; then
+  echo "bigip_ready_enabled:\n  - name: licensing\n    type: inline\n    commands:\n      - tmsh install sys license registration-key ${bigip_license}\n" >> /config/cloud/runtime-init-conf.yaml
 fi
 
 # Download the f5-bigip-runtime-init package

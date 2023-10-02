@@ -7,10 +7,10 @@ terraform {
 }
 
 provider "aws" {
-  region = var.awsRegion
+  region = var.aws_region
   default_tags {
     tags = {
-      Owner = "${var.resourceOwner}"
+      Owner = "${var.resource_owner}"
     }
   }
 }

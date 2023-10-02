@@ -1,207 +1,162 @@
-variable "projectPrefix" {
+variable "project_prefix" {
   description = "projectPrefix name for tagging"
   default     = "f5-bigip"
 }
-variable "resourceOwner" {
+
+variable "resource_owner" {
   description = "Owner of the deployment for tagging purposes"
   default     = "bigip-team"
 }
-variable "awsRegion" {
+
+variable "aws_region" {
   description = "aws region"
   type        = string
   default     = "us-east-2"
 }
-variable "awsAz1" {
+
+variable "aws_az1" {
   description = "Availability zone, will dynamically choose one if left empty"
   type        = string
   default     = null
 }
-variable "awsAz2" {
+
+variable "aws_az2" {
   description = "Availability zone, will dynamically choose one if left empty"
   type        = string
   default     = null
 }
-variable "bigipAdminPassword" {
+
+variable "bigip_admin_password" {
   description = "BIG-IP Admin Password (set on first boot)"
   default = "F5P@ssw0rd!"
   type = string
   sensitive = true
 }
-variable "labDomain" {
+
+variable "lab_domain" {
   description = "domain name for lab hostnames"
   default = "mylab.local"
   type = string
-
 }
-variable "bigipLicensePRI_AZ1" {
+
+variable "bigip_license_az1" {
   description = "BIG-IP License for AZ1 instance"
   type = string
   default = "PAYG"
 }
-variable "bigipLicenseSEC_AZ1" {
-  description = "BIG-IP License for AZ1 instance"
-  type = string
-  default = "PAYG"
-}
-variable "bigipLicensePRI_AZ2" {
+
+variable "bigip_license_az2" {
   description = "BIG-IP License for AZ2 instance"
   type = string
   default = "PAYG"
-}
-variable "bigipLicenseSEC_AZ2" {
-  description = "BIG-IP License for AZ2 instance"
-  type = string
-  default = "PAYG"
-}
-variable "ClientSubnetCIDR" {
-  description = "CIDR block for entire Juice Shop API VPC"
-  default = "10.20.0.0/16"
-  type = string
-}
-variable "ClientSubnetAZ1" {
-  description = "Subnet for Juice Shop API AZ1"
-  default = "10.20.100.0/24"
-  type = string
-}
-variable "ClientEC2InstanceType" {
-  description = "EC2 instance type for Juice Shop servers"
-  default = "t3.nano"
-}
-variable "ClientSubnetAZ2" {
-  description = "Subnet for Juice Shop API AZ2"
-  default = "10.20.200.0/24"
-  type = string
 }
 
-variable "ServerSubnetCIDR" {
-  description = "CIDR block for entire Juice Shop API VPC"
-  default = "10.30.0.0/16"
+variable "vpc_ipv4_cidr" {
+  description = "IPv4 Subnet for VPC in CIDR format"
   type = string
+  default = "10.255.0.0/16"
 }
-variable "ServerSubnetAZ1" {
-  description = "Subnet for Juice Shop API AZ1"
-  default = "10.30.100.0/24"
-  type = string
-}
-variable "ServerEC2InstanceType" {
+
+variable "client_ec2_instance" {
   description = "EC2 instance type for Juice Shop servers"
   default = "t3.nano"
 }
-variable "ServerSubnetAZ2" {
-  description = "Subnet for Juice Shop API AZ2"
-  default = "10.30.200.0/24"
-  type = string
+
+variable "server_ec2_instance" {
+  description = "EC2 instance type for Juice Shop servers"
+  default = "t3.nano"
 }
-variable "SecuritySvcsCIDR" {
-  description = "CIDR block for entire Security Services VPC"
-  default = "10.250.0.0/16"
-  type = string
-}
-variable "SecuritySvcsSubnetAZ1-MGMT" {
-  description = "Subnet for Security Services AZ1"
-  default = "10.250.150.0/24"
-  type = string
-}
-variable "SecuritySvcsSubnetAZ1-DATA" {
-  description = "Subnet for Security Services AZ1"
-  default = "10.250.100.0/24"
-  type = string
-}
-variable "SecuritySvcsSubnetAZ1-DATA-ingress" {
-  description = "Subnet for Security Services AZ1"
-  default = "10.250.101.0/24"
-  type = string
-}
-variable "SecuritySvcsSubnetAZ2-MGMT" {
-  description = "Subnet for Security Services AZ2"
-  default = "10.250.250.0/24"
-  type = string
-}
-variable "SecuritySvcsSubnetAZ2-DATA" {
-  description = "Subnet for Security Services AZ2"
-  default = "10.250.200.0/24"
-  type = string
-}
-variable "SecuritySvcsSubnetAZ2-DATA-ingress" {
-  description = "Subnet for Security Services AZ2"
-  default = "10.250.201.0/24"
-  type = string
-}
-variable get_address_url {
+
+variable get_address_url_ipv4 {
+  description = "URL for retrieving my external IPv4 address"
   type = string
   default = "https://api.ipify.org"
-  description = "URL for getting external IP address"
 }
+
 variable get_address_url_ipv6 {
+  description = "URL for retrieving my external IPv6 address"
   type = string
   default = "https://api6.ipify.org"
-  description = "URL for getting external IP address"
 }
+
 variable get_address_request_headers {
+  description = "HTTP headers to send"
   type = map
   default = {
     Accept = "text/plain"
   }
-  description = "HTTP headers to send"
 }
-variable "bigipLicenseType" {
-  type = string
+
+variable "bigip_license_type" {
   description = "license type BYOL or PAYG"
+  type = string
   default = "PAYG"
 }
+
 variable "bigip_ami_mapping" {
   description = "mapping AMIs for PAYG and BYOL"
+  type = map(string)
   default = {
-    "BYOL" = "BYOL-All Modules 2Boot Loc"
-    "PAYG" = "PAYG-Best 10Gbps"
+    "BYOL" = "All Modules 2Boot Loc"
+    "PAYG" = "Best 10Gbps"
   }
 }
+
 variable "bigip_ec2_instance_type" {
   description = "instance type for the BIG-IP instances"
   default = "t2.medium"
 }
+
 variable "bigip_version" {
-  type = string
   description = "the base TMOS version to use - most recent version will be used"
+  type = string
   default =  "16.1"
 }
+
 variable "f5_do_version" {
-  type = string
   description = "f5 declarative onboarding version (see https://github.com/F5Networks/f5-declarative-onboarding/releases/latest)"
+  type = string
   default = "1.39.0"
 }
+
 variable "f5_do_schema_version" {
-  type = string
   description = "f5 declarative onboarding version (see https://github.com/F5Networks/f5-declarative-onboarding/releases/latest)"
+  type = string
   default = "1.39.0"
 }
+
 variable "f5_as3_version" {
-  type = string
   description = "f5 application services version (see https://github.com/F5Networks/f5-appsvcs-extension/releases/latest)"
+  type = string
   default = "3.46.0"
 }
+
 variable "f5_as3_schema_version" {
-  type = string
   description = "f5 application services version (see https://github.com/F5Networks/f5-appsvcs-extension/releases/latest)"
+  type = string
   default = "3.46.0"
 }
+
 variable "f5_ts_version" {
-  type = string
   description = "f5 telemetry streaming version (see https://github.com/F5Networks/f5-declarative-onboarding/releases/latest)"
+  type = string
   default = "1.33.0"
 }
+
 variable "f5_ts_schema_version" {
-  type = string
   description = "f5 telemetry streaming version (see https://github.com/F5Networks/f5-declarative-onboarding/releases/latest)"
+  type = string
   default = "1.33.0"
 }
+
 variable "f5_cf_version" {
-  type = string
   description = "f5 cloud failover extension version (see https://github.com/F5Networks/f5-cloud-failover-extension/releases/)"
+  type = string
   default = "1.15.0"
 }
+
 variable "f5_cf_schema_version" {
-  type = string
   description = "f5 cloud failover extension version (see https://github.com/F5Networks/f5-cloud-failover-extension/releases/)"
+  type = string
   default = "1.15.0"
 }
