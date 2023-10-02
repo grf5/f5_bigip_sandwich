@@ -102,7 +102,7 @@ resource "aws_vpc" "bigip_sandwich" {
   assign_generated_ipv6_cidr_block = true
 
   enable_dns_hostnames= false
-  enable_dns_support = false  
+  enable_dns_support = true  
 
   tags = {
     Name = "${var.project_prefix}-bigip-sandwich-${random_id.build_suffix.hex}"
@@ -505,9 +505,11 @@ resource "aws_instance" "client_az1" {
   depends_on = [
     aws_eip.client_az1
   ]
+
   tags = {
     Name = "${var.project_prefix}-client-az1-${random_id.build_suffix.hex}"
   }
+
 }
 
 ############################################################

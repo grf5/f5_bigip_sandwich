@@ -110,7 +110,7 @@ variable "bigip_ec2_instance_type" {
 variable "bigip_version" {
   description = "the base TMOS version to use - most recent version will be used"
   type = string
-  default =  "16.1"
+  default =  "17.1"
 }
 
 variable "f5_do_version" {

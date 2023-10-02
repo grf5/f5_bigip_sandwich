@@ -22,11 +22,11 @@ cat << "EOF" > /config/cloud/manual_run.sh
 export F5_BIGIP_RUNTIME_INIT_LOG_LEVEL=silly
 
 # runtime init execution, with telemetry skipped
-f5-bigip-runtime-init --config-file /config/cloud/runtime-init-conf.yaml --skip-telemetry
+f5-bigip-runtime-init --config-file /config/cloud/cloud_config.yaml --skip-telemetry
 EOF
 
 # runtime init configuration
-cat << "EOF" > /config/cloud/runtime-init-conf.yaml
+cat << "EOF" > /config/cloud/cloud_config.yaml
 ---
 runtime_parameters:
   - name: MGMT_IP
@@ -113,6 +113,13 @@ extension_services:
             icrd.timeout: 120
             restjavad.timeout: 120
             restnoded.timeout: 120
+          nameServers:
+            class: DNS
+            nameServers: 
+              - 8.8.8.8
+              - 8.8.4.4
+              - 1.1.1.1
+              - 1.2.2.1
           ntpConfiguration:
             class: NTP
             servers:
@@ -159,6 +166,7 @@ extension_services:
             gw: "{{{ CLIENT_GATEWAY }}}"
             network: default
             mtu: 1500
+            localOnly: true
           configSync:
             class: ConfigSync
             configsyncIp: /Common/server-self/address
@@ -258,17 +266,17 @@ EOF
 
 # Add licensing if necessary
 if [ "${bigip_license_type}" != "PAYG" ]; then
-  echo "bigip_ready_enabled:\n  - name: licensing\n    type: inline\n    commands:\n      - tmsh install sys license registration-key ${bigip_license}\n" >> /config/cloud/runtime-init-conf.yaml
+  echo "bigip_ready_enabled:\n  - name: licensing\n    type: inline\n    commands:\n      - tmsh install sys license registration-key ${bigip_license}\n" >> /config/cloud/cloud_config.yaml
 fi
 
 # Download the f5-bigip-runtime-init package
-# 30 attempts, 5 second timeout and 10 second pause between attempts
+# 30 attempts, 10 second timeout and 5 second pause between attempts
 for i in {1..30}; do
-    curl -fv --retry 1 --connect-timeout 5 -L https://cdn.f5.com/product/cloudsolutions/f5-bigip-runtime-init/v1.6.2/dist/f5-bigip-runtime-init-1.6.2-1.gz.run -o /var/config/rest/downloads/f5-bigip-runtime-init-1.6.2-1.gz.run && break || sleep 10
+    curl -fv --retry 1 --connect-timeout 10 -L https://cdn.f5.com/product/cloudsolutions/f5-bigip-runtime-init/v1.6.2/dist/f5-bigip-runtime-init-1.6.2-1.gz.run -o /var/config/rest/downloads/f5-bigip-runtime-init-1.6.2-1.gz.run && break || sleep 5
 done
 
 # Execute the installer
 bash /var/config/rest/downloads/f5-bigip-runtime-init-1.6.2-1.gz.run -- "--cloud aws"
 
 # Runtime Init execution on configuration file created above
-f5-bigip-runtime-init --config-file /config/cloud/runtime-init-conf.yaml
+f5-bigip-runtime-init --config-file /config/cloud/cloud_config.yaml
