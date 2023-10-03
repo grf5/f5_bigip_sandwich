@@ -445,4 +445,5 @@ pyvenv.cfg
 .venv
 pip-selfcheck.json
 
-
+**/tfplan
+**/.terraform.lock.hcl

@@ -325,7 +325,7 @@ resource "aws_instance" "bigip_az1" {
       f5_cloud_failover_label = "f5_cloud_failover-${random_id.build_suffix.hex}",
       client_subnet_cidr_ipv4 = "${aws_subnet.client_az1.cidr_block}",
       server_subnet_cidr_ipv4 = "${aws_subnet.server_az1.cidr_block}",
-      s3_bucket = "f5-cloud-failover-${random_id.build_suffix.hex}"
+      s3_bucket = "${var.project_prefix}-f5-cloud-failover-${random_id.build_suffix.hex}"
     }
   )
   network_interface {
@@ -425,7 +425,7 @@ resource "aws_instance" "bigip_az2" {
     f5_cloud_failover_label = "f5_cloud_failover-${random_id.build_suffix.hex}",
     client_subnet_cidr_ipv4 = "${aws_subnet.client_az1.cidr_block}",
     server_subnet_cidr_ipv4 = "${aws_subnet.server_az1.cidr_block}",
-    s3_bucket = "f5-cloud-failover-${random_id.build_suffix.hex}"
+    s3_bucket = "${var.project_prefix}-f5-cloud-failover-${random_id.build_suffix.hex}"
     }
   )
   network_interface {
@@ -623,7 +623,7 @@ data "aws_iam_policy_document" "instance_policy" {
       "s3:GetBucketLocation",
       "s3:GetBucketTagging"
     ]
-    resources = [aws_s3_bucket.f5-cloud-failover-configuration.arn]
+    resources = [aws_s3_bucket.f5_cloud_failover_configuration.arn]
     effect    = "Allow"
   }
   statement {
@@ -632,17 +632,17 @@ data "aws_iam_policy_document" "instance_policy" {
       "s3:GetObject",
       "s3:DeleteObject"
     ]
-    resources = ["${aws_s3_bucket.f5-cloud-failover-configuration.arn}/*"]
+    resources = ["${aws_s3_bucket.f5_cloud_failover_configuration.arn}/*"]
     effect    = "Allow"
   }
 }
 
 resource "aws_iam_role" "f5_cloud_failover_role" {
-  name = "f5_cloud_failover_role-${random_id.build_suffix.hex}"
+  name = "f5_cloud_failover_role_${random_id.build_suffix.hex}"
   assume_role_policy = data.aws_iam_policy_document.instance_role.json
 
   inline_policy {
-    name = "f5_cloud_failover_policy-${random_id.build_suffix.hex}"
+    name = "f5_cloud_failover_policy_${random_id.build_suffix.hex}"
     policy = data.aws_iam_policy_document.instance_policy.json
   }
 
@@ -653,7 +653,7 @@ resource "aws_iam_role" "f5_cloud_failover_role" {
 }
 
 resource "aws_iam_instance_profile" "f5_cloud_failover_instance_profile" {
-  name = "f5_cloud_failover_instance_role-${random_id.build_suffix.hex}"
+  name = "${var.project_prefix}_f5_cloud_failover_instance_role_${random_id.build_suffix.hex}"
   role = aws_iam_role.f5_cloud_failover_role.name
   
   tags = {
@@ -662,8 +662,8 @@ resource "aws_iam_instance_profile" "f5_cloud_failover_instance_profile" {
 
 }
 
-resource "aws_s3_bucket" "f5-cloud-failover-configuration" {
-  bucket = "f5-cloud-failover-${random_id.build_suffix.hex}"
+resource "aws_s3_bucket" "f5_cloud_failover_configuration" {
+  bucket = "${var.project_prefix}-f5-cloud-failover-${random_id.build_suffix.hex}"
 
   tags = {
     Name = "${var.project_prefix}-f5-cloud-failover-configuration-${random_id.build_suffix.hex}"

@@ -1,4 +1,4 @@
-#!/bin/bash -x 
+#!/bin/bash -x
 
 # Send output to log file and serial console
 mkdir -p  /var/log/cloud /config/cloud /var/config/rest/downloads
@@ -12,22 +12,22 @@ exec 1>&-
 exec 1>$npipe
 exec 2>&1
 
-### write_files:
-# shell script execution with debug enabled
-cat << "EOF" > /config/cloud/manual_run.sh
-#!/bin/bash
-
-# Set logging level (least to most)
-# error, warn, info, debug, silly
-export F5_BIGIP_RUNTIME_INIT_LOG_LEVEL=silly
-
-# runtime init execution, with telemetry skipped
-f5-bigip-runtime-init --config-file /config/cloud/cloud_config.yaml --skip-telemetry
-EOF
+# Run Immediately Before MCPD starts
+/usr/bin/setdb provision.extramb 1000 || true
+/usr/bin/setdb restjavad.useextramb true || true
+/usr/bin/setdb iapplxrpm.timeout 300 || true
+/usr/bin/setdb icrd.timeout 180 || true
+/usr/bin/setdb restjavad.timeout 180 || true
+/usr/bin/setdb restnoded.timeout 180 || true
 
 # runtime init configuration
 cat << "EOF" > /config/cloud/cloud_config.yaml
 ---
+controls:
+  logLevel: silly
+  logFilename: /var/log/cloud/big-ip-runtime-init.log
+  logToJson: false
+  extensionInstallDelayInMs: 60000
 runtime_parameters:
   - name: MGMT_IP
     type: metadata
@@ -89,8 +89,6 @@ extension_services:
           class: Tenant
           systemConfig:
             class: System
-            autoCheck: false
-            autoPhonehome: false
             cliInactivityTimeout: 3600
             consoleInactivityTimeout: 3600
             hostname: ${cm_self_hostname}
@@ -100,19 +98,11 @@ extension_services:
             protocol: 2
           customDbVars:
             class: DbVariables
-            provision.extramb: 1000
-            restjavad.useextramb: true
             ui.system.preferences.recordsperscreen: 250
             ui.system.preferences.advancedselection: advanced
             ui.advisory.enabled: true
             ui.advisory.color: blue
-            ui.advisory.text: "F5 AWS Firewall"
-            tm.fastl4_ack_mirror: disable
-            tm.fw.defaultaction: drop
-            tm.rejectunmatched: false
-            icrd.timeout: 120
-            restjavad.timeout: 120
-            restnoded.timeout: 120
+            ui.advisory.text: "F5 BIG-IP in AWS"
           nameServers:
             class: DNS
             nameServers: 
@@ -265,7 +255,7 @@ post_onboard_enabled:
 EOF
 
 # Add licensing if necessary
-if [ "${bigip_license_type}" != "PAYG" ]; then
+if [ "${bigip_license_type}" == "BYOL" ]; then
   echo "bigip_ready_enabled:\n  - name: licensing\n    type: inline\n    commands:\n      - tmsh install sys license registration-key ${bigip_license}\n" >> /config/cloud/cloud_config.yaml
 fi
 
