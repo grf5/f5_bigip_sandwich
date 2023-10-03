@@ -104,7 +104,7 @@ variable "bigip_ami_mapping" {
 
 variable "bigip_ec2_instance_type" {
   description = "instance type for the BIG-IP instances"
-  default = "t2.medium"
+  default = "t2.large"
 }
 
 variable "bigip_version" {

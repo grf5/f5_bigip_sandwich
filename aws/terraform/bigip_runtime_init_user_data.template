@@ -27,8 +27,14 @@ controls:
   logLevel: silly
   logFilename: /var/log/cloud/big-ip-runtime-init.log
   logToJson: false
-  extensionInstallDelayInMs: 60000
+  extensionInstallDelayInMs: 45000
 runtime_parameters:
+  - name: HOST_NAME
+    type: metadata
+    metadataProvider:
+      environment: aws
+      type: uri
+      value: /latest/meta-data/hostname
   - name: MGMT_IP
     type: metadata
     metadataProvider: 
@@ -91,7 +97,7 @@ extension_services:
             class: System
             cliInactivityTimeout: 3600
             consoleInactivityTimeout: 3600
-            hostname: ${cm_self_hostname}
+            hostname: {{{ HOST_NAME }}}
           sshdConfig:
             class: SSHD
             inactivityTimeout: 3600
@@ -102,7 +108,7 @@ extension_services:
             ui.system.preferences.advancedselection: advanced
             ui.advisory.enabled: true
             ui.advisory.color: blue
-            ui.advisory.text: "F5 BIG-IP in AWS"
+            ui.advisory.text: "F5 BIG-IP AWS: {{{ HOST_NAME }}}"
           nameServers:
             class: DNS
             nameServers: 
@@ -121,7 +127,6 @@ extension_services:
           Provisioning:
             class: Provision
             ltm: nominal
-            afm: nominal
           admin:
             class: User
             userType: regular
@@ -167,8 +172,8 @@ extension_services:
             class: DeviceGroup
             type: sync-failover
             members:
-              - ${cm_primary_hostname}
-              - ${cm_secondary_hostname}
+              - ${cm_primary_ip}
+              - ${cm_secondary_ip}
             owner: /Common/failoverGroup/members/0
             autoSync: true
             saveOnAutoSync: true
@@ -182,75 +187,11 @@ extension_services:
             remoteHost: ${cm_peer_ip}
             remoteUsername: admin
             remotePassword: ${bigip_admin_password}
-    - extensionType: as3
-      type: inline
-      value:
-        class: AS3
-        action: deploy
-        persist: true
-        declaration:
-            class: ADC
-            schemaVersion: ${f5_as3_schema_version}
-            label: F5 BIG-IP AWS
-            remark: Tested with 16.1
-            IP-Forwarding:
-                class: Tenant
-                default_forwarding_ipv4:
-                    class: Application
-                    default_forwarder_ipv4:
-                        class: Service_Forwarding
-                        virtualAddresses:
-                            - 0.0.0.0/0
-                        virtualPort:
-                            - '0'
-                        forwardingType: ip
-                        layer4: any
-                        profileL4: basic
-                        snat: none
-                default_forwarding_ipv6:
-                    class: Application
-                    default_forwarder_ipv6:
-                        class: Service_Forwarding
-                        virtualAddresses:
-                            - '::/0'
-                        virtualPort:
-                            - '0'
-                        forwardingType: ip
-                        layer4: any
-                        profileL4: basic
-                        snat: none
-    - extensionType: cf
-      type: inline
-      value:
-        class: Cloud_Failover
-        environment: aws
-        controls:
-          class: Controls
-          logLevel: silly
-        externalStorage:
-          scopingName: '${s3_bucket}'
-        failoverAddresses:
-          enabled: false
-          scopingTags:
-            f5_cloud_failover_label: '${f5_cloud_failover_label}'
-        failoverRoutes:
-          enabled: true
-          scopingTags:
-            f5_cloud_failover_label: '${f5_cloud_failover_label}'
-          scopingAddressRanges:
-            - range: '${client_subnet_cidr_ipv4}'
-            - range: '${server_subnet_cidr_ipv4}'
-          defaultNextHopAddresses:
-            discoveryType: static
-            items:
-              - '${primary_data_ip}'
-              - '${secondary_data_ip}'
 post_onboard_enabled:
   - name: trigger_failover
     type: inline
     commands:
     - $(nohup bash /config/failover/tgactive &>/dev/null &)
-    - $(nohup tmsh modify cm device-group failoverGroup devices modify { ${cm_secondary_hostname} { set-sync-leader } } &>/dev/null &)
     - tmsh save sys config
 EOF
 
