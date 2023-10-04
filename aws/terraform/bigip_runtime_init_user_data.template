@@ -27,7 +27,7 @@ controls:
   logLevel: silly
   logFilename: /var/log/cloud/big-ip-runtime-init.log
   logToJson: false
-  extensionInstallDelayInMs: 45000
+  extensionInstallDelayInMs: 30000
 runtime_parameters:
   - name: HOST_NAME
     type: metadata
