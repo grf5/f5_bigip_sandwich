@@ -97,7 +97,7 @@ extension_services:
             class: System
             cliInactivityTimeout: 3600
             consoleInactivityTimeout: 3600
-            hostname: {{{ HOST_NAME }}}
+            hostname: "{{{ HOST_NAME }}}"
           sshdConfig:
             class: SSHD
             inactivityTimeout: 3600
@@ -108,7 +108,7 @@ extension_services:
             ui.system.preferences.advancedselection: advanced
             ui.advisory.enabled: true
             ui.advisory.color: blue
-            ui.advisory.text: "F5 BIG-IP AWS: {{{ HOST_NAME }}}"
+            ui.advisory.text: "F5 BIG-IP AWS"
           nameServers:
             class: DNS
             nameServers: 
@@ -197,7 +197,7 @@ EOF
 
 # Add licensing if necessary
 if [ "${bigip_license_type}" == "BYOL" ]; then
-  echo "bigip_ready_enabled:\n  - name: licensing\n    type: inline\n    commands:\n      - tmsh install sys license registration-key ${bigip_license}\n" >> /config/cloud/cloud_config.yaml
+  printf "bigip_ready_enabled:\n  - name: licensing\n    type: inline\n    commands:\n      - tmsh install sys license registration-key ${bigip_license}\n" >> /config/cloud/cloud_config.yaml
 fi
 
 # Download the f5-bigip-runtime-init package

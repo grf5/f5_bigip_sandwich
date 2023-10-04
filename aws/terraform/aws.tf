@@ -76,7 +76,7 @@ data "aws_ami" "F5BIG-IP_AMI" {
   filter {
     name = "name"
     # values = ["F5 BIGIP-${var.bigip_version}*${lookup(var.bigip_ami_mapping, var.bigip_license_type, "PAYG-Best Plus 200Mbps")}*"]
-    values = ["F5 BIGIP-${var.bigip_version}*25Mbps*"]
+    values = ["F5 BIGIP-${var.bigip_version}*${lookup(var.bigip_ami_mapping, var.bigip_license_type)}*"]
   }
 
   filter {

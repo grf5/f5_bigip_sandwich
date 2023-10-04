@@ -17,3 +17,6 @@ test $EXITCODE -eq 0 && terraform apply -input=false -auto-approve -compact-warn
 
 # print timestamp of script completion
 printf "$0 completed at $(date)"
+
+# Easter egg for Mac users
+zsh -c 'if [[ $(uname) = "Darwin" ]]; then; sleep 360; say --voice=Albert "Hey there, cookie monster here to tell you that your A.W.S. instances are most likely available. Yummy\!"; fi' &
