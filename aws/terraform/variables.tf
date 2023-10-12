@@ -14,6 +14,18 @@ variable "aws_region" {
   default     = "us-east-2"
 }
 
+variable "additional_management_ipv4_cidr_blocks" {
+  description = "Additional IPv4 CIDR blocks for external management access"
+  type = list
+  default = []
+}
+
+variable "additional_management_ipv6_cidr_blocks" {
+  description = "Additional IPv6 CIDR blocks for external management access"
+  type = list
+  default = []
+}
+
 variable "aws_az1" {
   description = "Availability zone, will dynamically choose one if left empty"
   type        = string
@@ -59,12 +71,12 @@ variable "vpc_ipv4_cidr" {
 
 variable "client_ec2_instance" {
   description = "EC2 instance type for Juice Shop servers"
-  default = "t3.nano"
+  default = "t3.small"
 }
 
 variable "server_ec2_instance" {
   description = "EC2 instance type for Juice Shop servers"
-  default = "t3.nano"
+  default = "t3.small"
 }
 
 variable get_address_url_ipv4 {

@@ -135,6 +135,25 @@ resource "aws_default_security_group" "bigip" {
     to_port = 0
     ipv6_cidr_blocks = [format("%s/%s",data.http.ipv6_address.response_body,128)]
   }
+
+  dynamic ingress {
+    for_each = toset( var.additional_management_ipv4_cidr_blocks )
+      description = "permit IPv4 mgmt traffic from ${ingress.value}"
+      protocol = "-1"
+      from_port = 0
+      to_port = 0
+      cidr_blocks = [ ingress.value ]
+  }
+
+  dynamic ingress {
+    for_each = toset( var.additional_management_ipv6_cidr_blocks )
+      description = "permit IPv6 mgmt traffic from ${ingress.value}"
+      protocol = "-1"
+      from_port = 0
+      to_port = 0
+      cidr_blocks = [ ingress.value ]
+  }
+
   egress {
     description = "allow all IPv4 outbound"
     from_port = 0
@@ -243,6 +262,136 @@ resource "aws_default_route_table" "bigip_sandwich" {
     Name = "${var.project_prefix}-bigip_sandwich-${random_id.build_suffix.hex}"
     f5_cloud_failover_label = "f5_cloud_failover-${random_id.build_suffix.hex}"
   }
+}
+
+resource "aws_route_table" "client_routes_az1" {
+
+  route {
+    cidr_block = aws_subnet.server_az1.cidr_block
+    gateway_id = aws_network_interface.bigip_az1_client.id
+    tags = {
+      Name = "${var.project_prefix}-client-to-server-via-bigip-az1-ipv4-${random_id.build_suffix.hex}"
+    }
+  }
+
+  route {
+    ipv6_cidr_block = aws_subnet.client_az1.ipv6_cidr_block
+    gateway_id = aws_network_interface.bigip_az1_client.id
+
+    tags = {
+      Name = "${var.project_prefix}-client-to-server-via-bigip-az1-ipv6-${random_id.build_suffix.hex}"
+    }
+
+  }
+
+  tags = {
+    Name = "${var.project_prefix}-client-routes-az1-${random_id.build_suffix.hex}"
+  }
+
+}
+
+resource "aws_route_table" "server_routes_az1" {
+
+  route {
+    cidr_block = aws_subnet.client_az1.cidr_block
+    gateway_id = aws_network_interface.bigip_az1_server.id
+    tags = {
+      Name = "${var.project_prefix}-server-to-client-via-bigip-az1-ipv4-${random_id.build_suffix.hex}"
+    }
+  }
+
+  route {
+    ipv6_cidr_block = aws_subnet.server_az1.ipv6_cidr_block
+    gateway_id = aws_network_interface.bigip_az1_server.id
+
+    tags = {
+      Name = "${var.project_prefix}-server-to-client-via-bigip-az1-ipv6-${random_id.build_suffix.hex}"
+    }
+
+  }
+
+  tags = {
+    Name = "${var.project_prefix}-server-routes-az1-${random_id.build_suffix.hex}"
+  }
+
+}
+
+resource "aws_route_table" "client_routes_az2" {
+
+  route {
+    cidr_block = aws_subnet.server_az2.cidr_block
+    gateway_id = aws_network_interface.bigip_az2_client.id
+    tags = {
+      Name = "${var.project_prefix}-client-to-server-via-bigip-az2-ipv4-${random_id.build_suffix.hex}"
+    }
+  }
+
+  route {
+    ipv6_cidr_block = aws_subnet.client_az2.ipv6_cidr_block
+    gateway_id = aws_network_interface.bigip_az2_client.id
+
+    tags = {
+      Name = "${var.project_prefix}-client-to-server-via-bigip-az2-ipv6-${random_id.build_suffix.hex}"
+    }
+  }
+
+  tags = {
+    Name = "${var.project_prefix}-client-routes-az2-${random_id.build_suffix.hex}"
+  }
+
+}
+
+resource "aws_route_table" "server_routes_az2" {
+
+  route {
+    cidr_block = aws_subnet.client_az2.cidr_block
+    gateway_id = aws_network_interface.bigip_az2_server.id
+    tags = {
+      Name = "${var.project_prefix}-server-to-client-via-bigip-az2-ipv4-${random_id.build_suffix.hex}"
+    }
+  }
+
+  route {
+    ipv6_cidr_block = aws_subnet.client_az2.ipv6_cidr_block
+    gateway_id = aws_network_interface.bigip_az2_server.id
+
+    tags = {
+      Name = "${var.project_prefix}-server-to-client-via-bigip-az2-ipv6-${random_id.build_suffix.hex}"
+    }
+  }
+
+  tags = {
+    Name = "${var.project_prefix}-server-routes-az2-${random_id.build_suffix.hex}"
+  }
+
+}
+
+resource "aws_route_table_association" "client-az1" {
+
+  subnet_id = aws_subnet.client_az1.id
+  route_table_id = aws_route_table.client_routes_az1.id
+
+}
+
+resource "aws_route_table_association" "server-az1" {
+
+  subnet_id = aws_subnet.server_az1.id
+  route_table_id = aws_route_table.server_routes_az1.id
+
+}
+
+resource "aws_route_table_association" "client-az2" {
+
+  subnet_id = aws_subnet.client_az2.id
+  route_table_id = aws_route_table.client_routes_az2.id
+
+}
+
+resource "aws_route_table_association" "server-az2" {
+
+  subnet_id = aws_subnet.server_az2.id
+  route_table_id = aws_route_table.server_routes_az2.id
+
 }
 
 ## 
@@ -356,7 +505,7 @@ resource "aws_network_interface" "bigip_az2_mgmt" {
   # Disable IPV6 dual stack management because it breaks DO clustering
   ipv6_address_count = 0
   tags = {
-    Name = "${var.project_prefix}-bigip_az1-${random_id.build_suffix.hex}"
+    Name = "${var.project_prefix}-bigip_az2-mgmt-${random_id.build_suffix.hex}"
   }
 }
 
@@ -364,7 +513,7 @@ resource "aws_network_interface" "bigip_az2_client" {
   source_dest_check = false
   subnet_id = aws_subnet.client_az2.id
   tags = {
-    Name = "${var.project_prefix}-bigip_az1-${random_id.build_suffix.hex}"
+    Name = "${var.project_prefix}-bigip-az2-client-${random_id.build_suffix.hex}"
     f5_cloud_failover_label = "f5_cloud_failover-${random_id.build_suffix.hex}"
     f5_cloud_failover_nic_map = "data"
   }
@@ -374,7 +523,7 @@ resource "aws_network_interface" "bigip_az2_server" {
   source_dest_check = false
   subnet_id = aws_subnet.server_az2.id
   tags = {
-    Name = "${var.project_prefix}-bigip_az1-${random_id.build_suffix.hex}"
+    Name = "${var.project_prefix}-bigip-az2-server-${random_id.build_suffix.hex}"
     f5_cloud_failover_label = "f5_cloud_failover-${random_id.build_suffix.hex}"
     f5_cloud_failover_nic_map = "data"
   }
@@ -389,7 +538,7 @@ resource "aws_eip" "bigip_az2_mgmt" {
     aws_internet_gateway.bigip_sandwich
   ]
   tags = {
-    Name = "${var.project_prefix}-bigip_az2-mgmt-${random_id.build_suffix.hex}"
+    Name = "${var.project_prefix}-bigip-az2-mgmt-${random_id.build_suffix.hex}"
   }
 }
 
@@ -482,15 +631,22 @@ resource "aws_instance" "client_az1" {
               #!/bin/bash
               sudo apt update
               sudo apt -y upgrade
-              sudo apt -y install apt-transport-https ca-certificates curl software-properties-common docker
+              sudo apt -y install apt-transport-https ca-certificates curl software-properties-common
               sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
-              sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu focal stable"
+              sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+              sudo add-apt-repository universe
+              sudo add-apt-repository ppa:certbot/certbot
               sudo apt update
               sudo apt-cache policy docker-ce
-              sudo apt -y install docker-ce
+              sudo apt -y install docker-ce docker-compose certbot gnupg-agent
               sudo usermod -aG docker ubuntu
+              sudo openssl req -new -newkey rsa:4096 -x509 -sha256 -days 365 -nodes -out /etc/ssl/ctfd.crt -keyout /etc/ssl/ctfd.key
+              sudo curl -OLJ "https://raw.githubusercontent.com/tghosth/CTFd-docker-deploy/master/docker-compose-production.yml"
+              sudo curl -OLJ "https://raw.githubusercontent.com/tghosth/CTFd-docker-deploy/master/nginx.conf"
+              docker-compose -f docker-compose-production.yml up -d
               docker pull bkimminich/juice-shop
               docker run -d -p 80:3000 --restart unless-stopped bkimminich/juice-shop
+              docker-compose up -d
               sudo reboot
               EOF    
   network_interface {

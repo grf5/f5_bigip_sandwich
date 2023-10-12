@@ -35,6 +35,12 @@ runtime_parameters:
       environment: aws
       type: uri
       value: /latest/meta-data/hostname
+  - name: AVAILABILITY_ZONE
+    type: metadata
+    metadataProvider:
+      environment: aws
+      type: uri
+      value: /latest/meta-data/placement/availability-zone
   - name: MGMT_IP
     type: metadata
     metadataProvider: 
@@ -108,7 +114,7 @@ extension_services:
             ui.system.preferences.advancedselection: advanced
             ui.advisory.enabled: true
             ui.advisory.color: blue
-            ui.advisory.text: "F5 BIG-IP AWS"
+            ui.advisory.text: "F5 BIG-IP AWS ({{{AVAILABILITY_ZONE }}})"
           nameServers:
             class: DNS
             nameServers: 
