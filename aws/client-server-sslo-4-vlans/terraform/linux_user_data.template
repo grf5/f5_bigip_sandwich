@@ -1,5 +1,27 @@
-#!/bin/bash
-sudo apt update
-sudo apt -y upgrade
-sudo apt -y install apt-transport-https nginx net-tools
-sudo systemctl enable --now nginx
+#cloud-config
+package_upgrade: true
+packages:
+  - nginx
+  - apt-transport-https
+write_files:
+  - path: /etc/nginx/sites-available/default_https
+    content: |
+      server {
+        listen 443 ssl;
+        server_name www.lab.local;
+        ssl_certificate /etc/ssl/certs/www-lab-local.crt;
+        ssl_certificate_key /etc/ssl/private/www-lab-local.key;
+
+        location / {
+          proxy_pass http://localhost:80;
+          proxy_http_version 1.1;
+          proxy_set_header Upgrade $http_upgrade;
+          proxy_set_header Connection 'upgrade';
+          proxy_set_header Host $host;
+          proxy_cache_bypass $http_upgrade;
+        }
+      }
+
+runcmd:
+  - sudo openssl req -newkey rsa:4096 -x509 -sha256 -days 365 -nodes -out /etc/ssl/certs/www-lab-local.crt -keyout /etc/ssl/private/www-lab-local.key -subj "/C=Lake Mary/ST=Florida/L=US/O=Sales Engineering/OU=Sales/CN=www.lab.local"
+  - sudo systemctl enable --now nginx

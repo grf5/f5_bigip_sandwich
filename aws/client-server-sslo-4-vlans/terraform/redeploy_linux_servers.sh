@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo "This will destroy your linux VMs and recreate them from scratch, no going back from here - Press enter to continue"
+echo "This will destroy your linux VMs and recreate them from scratch, no going back from here!"
 # pause to make sure!
 read -r -p "Are you sure? [y/N] " response
 

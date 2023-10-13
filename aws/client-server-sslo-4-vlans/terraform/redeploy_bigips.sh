@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo "This will destroy your BIG-IPs and recreate them from scratch, no going back from here - Press enter to continue"
+echo "This will destroy your BIG-IPs and recreate them from scratch, no going back from here!"
 # pause to make sure!
 read -r -p "Are you sure? [y/N] " response
 
@@ -18,7 +18,7 @@ terraform plan -replace="aws_instance.bigip_az1" -replace="aws_instance.bigip_az
 EXITCODE=$?
 
 # apply the plan if the planning operation was successful
-test $EXITCODE -eq 0 && terraform apply -input=false -auto-approve -compact-warnings tfplan || echo "An error occurred while creating the Terraform plan"; 
+test $EXITCODE -eq 0 && terraform apply -input=false -auto-approve -compact-warnings tfplan || echo "An error occurred while creating the Terraform plan" 
 
 # print timestamp of script completion
 printf "$0 completed at $(date)"
