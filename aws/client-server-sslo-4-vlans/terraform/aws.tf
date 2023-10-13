@@ -749,25 +749,7 @@ resource "aws_instance" "client_az1" {
   instance_type = "${var.client_ec2_instance}"
   availability_zone = local.aws_az1
   key_name = aws_key_pair.deployer.id
-	user_data = <<-EOF
-              #!/bin/bash
-              sudo apt update
-              sudo apt -y upgrade
-              sudo apt -y install apt-transport-https ca-certificates curl software-properties-common
-              sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
-              sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
-              sudo add-apt-repository universe
-              sudo apt update
-              sudo apt-cache policy docker-ce
-              sudo apt -y install docker-ce docker-compose certbot gnupg-agent
-              sudo usermod -aG docker ubuntu
-              sudo openssl req -new -newkey rsa:4096 -x509 -sha256 -days 365 -nodes -out /etc/ssl/ctfd.crt -keyout /etc/ssl/ctfd.key
-              docker-compose -f docker-compose-production.yml up -d
-              docker pull bkimminich/juice-shop
-              docker run -d -p 80:3000 --restart unless-stopped bkimminich/juice-shop
-              docker-compose up -d
-              sudo reboot
-              EOF    
+	user_data = templatefile("${path.module}/linux_user_data.template", {})
   network_interface {
     network_interface_id = aws_network_interface.client_az1.id
     device_index = 0
@@ -816,21 +798,7 @@ resource "aws_instance" "server_az1" {
   instance_type = "${var.server_ec2_instance}"
   availability_zone = local.aws_az1
   key_name = aws_key_pair.deployer.id
-	user_data = <<-EOF
-              #!/bin/bash
-              sudo apt update
-              sudo apt -y upgrade
-              sudo apt -y install apt-transport-https ca-certificates curl software-properties-common docker
-              sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
-              sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu focal stable"
-              sudo apt update
-              sudo apt-cache policy docker-ce
-              sudo apt -y install docker-ce
-              sudo usermod -aG docker ubuntu
-              docker pull bkimminich/juice-shop
-              docker run -d -p 80:3000 --restart unless-stopped bkimminich/juice-shop
-              sudo reboot
-              EOF    
+	user_data = templatefile("${path.module}/linux_user_data.template",{})
   network_interface {
     network_interface_id = aws_network_interface.server_az1.id
     device_index = 0

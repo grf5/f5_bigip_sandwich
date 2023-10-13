@@ -1,5 +1,9 @@
 #!/bin/bash
 
+echo "This will destroy your linux VMs and recreate them from scratch, no going back from here - Press enter to continue"
+# pause to make sure!
+read -r -p "Are you sure? [y/N] " response
+
 # Enable logging to file
 export TF_LOG=warn
 export TF_LOG_PATH=terraform.log
