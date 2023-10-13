@@ -204,31 +204,6 @@ extension_services:
             network: default
             mtu: 1500
             localOnly: true
-          configSync:
-            class: ConfigSync
-            configsyncIp: /Common/server-self/address
-          failoverAddress:
-            class: FailoverUnicast
-            address: /Common/server-self/address
-          failoverGroup:
-            class: DeviceGroup
-            type: sync-failover
-            members:
-              - ${cm_primary_ip}
-              - ${cm_secondary_ip}
-            owner: /Common/failoverGroup/members/0
-            autoSync: true
-            saveOnAutoSync: true
-            networkFailover: true
-            fullLoadOnSync: false
-            asmSync: false
-          trust:
-            class: DeviceTrust
-            localUsername: admin
-            localPassword: ${bigip_admin_password}
-            remoteHost: ${cm_peer_ip}
-            remoteUsername: admin
-            remotePassword: ${bigip_admin_password}
 post_onboard_enabled:
   - name: save_config
     type: inline

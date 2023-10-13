@@ -1,8 +1,12 @@
 #cloud-config
 package_upgrade: true
+
 packages:
   - nginx
   - apt-transport-https
+  - net-tools
+  - libnss3-tools
+
 write_files:
   - path: /etc/nginx/sites-available/default_https
     content: |
@@ -23,5 +27,6 @@ write_files:
       }
 
 runcmd:
+  - sed -i '/^127.0.0.1/ s/$/ www.lab.local/' /etc/hosts
   - sudo openssl req -newkey rsa:4096 -x509 -sha256 -days 365 -nodes -out /etc/ssl/certs/www-lab-local.crt -keyout /etc/ssl/private/www-lab-local.key -subj "/C=US/ST=Washington/L=Seattle/O=F5/OU=Sales/CN=www.lab.local"
   - sudo systemctl enable --now nginx

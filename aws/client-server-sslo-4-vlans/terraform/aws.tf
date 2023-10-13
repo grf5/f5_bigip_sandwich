@@ -532,9 +532,13 @@ resource "aws_eip" "bigip_az1_mgmt" {
 }
 
 resource "aws_instance" "bigip_az1" {
+
+  availability_zone = local.aws_az1
   ami = data.aws_ami.F5BIG-IP_AMI.id
   instance_type = "${var.bigip_ec2_instance_type}"
-  availability_zone = local.aws_az1
+  root_block_device {
+    volume_size = 150
+  }
   key_name = aws_key_pair.deployer.id
   iam_instance_profile = "${aws_iam_instance_profile.f5_cloud_failover_instance_profile.name}"
 	user_data = templatefile("${path.module}/bigip_runtime_init_user_data.template",
@@ -657,11 +661,16 @@ resource "aws_eip" "bigip_az2_mgmt" {
 }
 
 resource "aws_instance" "bigip_az2" {
+
+  availability_zone = local.aws_az2
   ami = data.aws_ami.F5BIG-IP_AMI.id
   instance_type = "${var.bigip_ec2_instance_type}"
-  availability_zone = local.aws_az2
+  root_block_device {
+    volume_size = 150
+  }
   key_name = aws_key_pair.deployer.id
   iam_instance_profile = "${aws_iam_instance_profile.f5_cloud_failover_instance_profile.name}"
+
 	user_data = templatefile("${path.module}/bigip_runtime_init_user_data.template",
     {
     bigip_admin_password = "${var.bigip_admin_password}",
