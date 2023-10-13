@@ -329,6 +329,16 @@ resource "aws_route_table" "client_routes_az1" {
     network_interface_id = aws_network_interface.bigip_az1_client.id
   }
 
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.bigip_sandwich.id
+  }
+
+  route {
+    ipv6_cidr_block = "::/0"
+    gateway_id = aws_internet_gateway.bigip_sandwich.id
+  }
+
   tags = {
     Name = "${var.project_prefix}-client-routes-az1-${random_id.build_suffix.hex}"
   }
@@ -347,6 +357,16 @@ resource "aws_route_table" "server_routes_az1" {
   route {
     ipv6_cidr_block = aws_subnet.client_az1.ipv6_cidr_block
     network_interface_id = aws_network_interface.bigip_az1_server.id
+  }
+
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.bigip_sandwich.id
+  }
+
+  route {
+    ipv6_cidr_block = "::/0"
+    gateway_id = aws_internet_gateway.bigip_sandwich.id
   }
 
   tags = {
@@ -369,6 +389,16 @@ resource "aws_route_table" "client_routes_az2" {
     network_interface_id = aws_network_interface.bigip_az2_client.id
   }
 
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.bigip_sandwich.id
+  }
+
+  route {
+    ipv6_cidr_block = "::/0"
+    gateway_id = aws_internet_gateway.bigip_sandwich.id
+  }
+
   tags = {
     Name = "${var.project_prefix}-client-routes-az2-${random_id.build_suffix.hex}"
   }
@@ -387,6 +417,16 @@ resource "aws_route_table" "server_routes_az2" {
   route {
     ipv6_cidr_block = aws_subnet.client_az2.ipv6_cidr_block
     network_interface_id = aws_network_interface.bigip_az2_server.id
+  }
+
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.bigip_sandwich.id
+  }
+
+  route {
+    ipv6_cidr_block = "::/0"
+    gateway_id = aws_internet_gateway.bigip_sandwich.id
   }
 
   tags = {
@@ -717,7 +757,6 @@ resource "aws_instance" "client_az1" {
               sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
               sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
               sudo add-apt-repository universe
-              sudo add-apt-repository ppa:certbot/certbot
               sudo apt update
               sudo apt-cache policy docker-ce
               sudo apt -y install docker-ce docker-compose certbot gnupg-agent
