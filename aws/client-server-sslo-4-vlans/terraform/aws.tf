@@ -30,7 +30,7 @@ data "http" "ipv4_address" {
 }
 
 data "http" "ipv6_address" {
-  # trieve the local public IPv6 address
+  # retrieve the local public IPv6 address
   url = var.get_address_url_ipv6
   request_headers = var.get_address_request_headers
 }
@@ -222,7 +222,7 @@ resource "aws_subnet" "client_az2" {
   ipv6_cidr_block = "${cidrsubnet(aws_vpc.bigip_sandwich.ipv6_cidr_block, 8, 21)}"
   assign_ipv6_address_on_creation = true
   tags = {
-    Name = "${var.project_prefix}-client_az2-${random_id.build_suffix.hex}"
+    Name = "${var.project_prefix}-client-az2-${random_id.build_suffix.hex}"
   }
 }
 
@@ -310,7 +310,7 @@ resource "aws_default_route_table" "bigip_sandwich" {
     network_interface_id = aws_internet_gateway.bigip_sandwich.id
   }
   tags = {
-    Name = "${var.project_prefix}-bigip_sandwich-${random_id.build_suffix.hex}"
+    Name = "${var.project_prefix}-bigip-sandwich-${random_id.build_suffix.hex}"
     f5_cloud_failover_label = "f5_cloud_failover-${random_id.build_suffix.hex}"
   }
 }
@@ -434,7 +434,7 @@ resource "aws_network_interface" "bigip_az1_mgmt" {
   # Disable IPV6 dual stack management because it breaks DO clustering
   ipv6_address_count = 0
   tags = {
-    Name = "${var.project_prefix}-bigip_az1_mgmt-${random_id.build_suffix.hex}"
+    Name = "${var.project_prefix}-bigip-az1-mgmt-${random_id.build_suffix.hex}"
   }
 }
 
@@ -442,7 +442,7 @@ resource "aws_network_interface" "bigip_az1_client" {
   source_dest_check = false
   subnet_id = aws_subnet.client_az1.id
   tags = {
-    Name = "${var.project_prefix}-bigip_az1_client-${random_id.build_suffix.hex}"
+    Name = "${var.project_prefix}-bigip-az1-client-${random_id.build_suffix.hex}"
     f5_cloud_failover_label = "f5_cloud_failover-${random_id.build_suffix.hex}"
     f5_cloud_failover_nic_map = "client"
   }
@@ -452,7 +452,7 @@ resource "aws_network_interface" "bigip_az1_server" {
   source_dest_check = false
   subnet_id = aws_subnet.server_az1.id
   tags = {
-    Name = "${var.project_prefix}-bigip_az1_server-${random_id.build_suffix.hex}"
+    Name = "${var.project_prefix}-bigip-az1-server-${random_id.build_suffix.hex}"
     f5_cloud_failover_label = "f5_cloud_failover-${random_id.build_suffix.hex}"
     f5_cloud_failover_nic_map = "server"
   }
@@ -487,7 +487,7 @@ resource "aws_eip" "bigip_az1_mgmt" {
     aws_internet_gateway.bigip_sandwich
   ]
   tags = {
-    Name = "${var.project_prefix}-bigip_az1_mgmt-${random_id.build_suffix.hex}"
+    Name = "${var.project_prefix}-bigip-az1-mgmt-${random_id.build_suffix.hex}"
   }
 }
 
@@ -547,7 +547,7 @@ resource "aws_instance" "bigip_az1" {
     aws_eip.bigip_az1_mgmt
   ]
   tags = {
-    Name = "${var.project_prefix}-bigip_az1-${random_id.build_suffix.hex}"
+    Name = "${var.project_prefix}-bigip-az1-${random_id.build_suffix.hex}"
   }
 }
 
@@ -560,7 +560,7 @@ resource "aws_network_interface" "bigip_az2_mgmt" {
   # Disable IPV6 dual stack management because it breaks DO clustering
   ipv6_address_count = 0
   tags = {
-    Name = "${var.project_prefix}-bigip_az2-mgmt-${random_id.build_suffix.hex}"
+    Name = "${var.project_prefix}-bigip-az2-mgmt-${random_id.build_suffix.hex}"
   }
 }
 
@@ -870,11 +870,11 @@ data "aws_iam_policy_document" "instance_policy" {
 }
 
 resource "aws_iam_role" "f5_cloud_failover_role" {
-  name = "f5_cloud_failover_role_${random_id.build_suffix.hex}"
+  name = "f5-cloud-failover-role-${random_id.build_suffix.hex}"
   assume_role_policy = data.aws_iam_policy_document.instance_role.json
 
   inline_policy {
-    name = "f5_cloud_failover_policy_${random_id.build_suffix.hex}"
+    name = "f5-cloud-failover-policy-${random_id.build_suffix.hex}"
     policy = data.aws_iam_policy_document.instance_policy.json
   }
 
@@ -885,7 +885,7 @@ resource "aws_iam_role" "f5_cloud_failover_role" {
 }
 
 resource "aws_iam_instance_profile" "f5_cloud_failover_instance_profile" {
-  name = "${var.project_prefix}_f5_cloud_failover_instance_role_${random_id.build_suffix.hex}"
+  name = "${var.project_prefix}-f5-cloud-failover-instance-role-${random_id.build_suffix.hex}"
   role = aws_iam_role.f5_cloud_failover_role.name
   
   tags = {
