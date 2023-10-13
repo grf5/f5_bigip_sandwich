@@ -9,7 +9,7 @@ rm -f $TF_LOG_PATH
 terraform init --upgrade
 
 # run the plan to ensure we have proper configuration
-terraform plan -replace="aws_instance.bigip_az1" -replace="aws_instance.bigip_az2" -input=false -compact-warnings -var-file=admin.tfvars -out tfplan
+terraform plan -replace="aws_instance.client_az1" -replace="aws_instance.server_az1" -input=false -compact-warnings -var-file=admin.tfvars -out tfplan
 EXITCODE=$?
 
 # apply the plan if the planning operation was successful
