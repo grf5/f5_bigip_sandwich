@@ -75,7 +75,6 @@ data "aws_ami" "F5BIG-IP_AMI" {
 
   filter {
     name = "name"
-    # values = ["F5 BIGIP-${var.bigip_version}*${lookup(var.bigip_ami_mapping, var.bigip_license_type, "PAYG-Best Plus 200Mbps")}*"]
     values = ["F5 BIGIP-${var.bigip_version}*${lookup(var.bigip_ami_mapping, var.bigip_license_type)}*"]
   }
 
@@ -136,23 +135,6 @@ resource "aws_default_security_group" "bigip" {
     ipv6_cidr_blocks = [format("%s/%s",data.http.ipv6_address.response_body,128)]
   }
 
-  dynamic ingress {
-    for_each = toset( var.additional_management_ipv4_cidr_blocks )
-      description = "permit IPv4 mgmt traffic from ${ingress.value}"
-      protocol = "-1"
-      from_port = 0
-      to_port = 0
-      cidr_blocks = [ ingress.value ]
-  }
-
-  dynamic ingress {
-    for_each = toset( var.additional_management_ipv6_cidr_blocks )
-      description = "permit IPv6 mgmt traffic from ${ingress.value}"
-      protocol = "-1"
-      from_port = 0
-      to_port = 0
-      cidr_blocks = [ ingress.value ]
-  }
 
   egress {
     description = "allow all IPv4 outbound"
@@ -175,11 +157,36 @@ resource "aws_default_security_group" "bigip" {
 
 }
 
+resource "aws_security_group_rule" "ipv4_mgmt_cidr_blocks" {
+  
+  for_each = toset( var.additional_management_ipv4_cidr_blocks )
+  security_group_id = aws_default_security_group.bigip.id
+  type = "ingress"
+  description = "permit IPv4 mgmt traffic from ${each.key}"
+  protocol = "-1"
+  from_port = 0
+  to_port = 0
+  cidr_blocks = [ each.key ]
+
+}
+
+resource "aws_security_group_rule" "ipv6_mgmt_cidr_blocks" { 
+  
+  security_group_id = aws_default_security_group.bigip.id
+  for_each = toset( var.additional_management_ipv6_cidr_blocks )
+  type = "ingress"
+  protocol = "-1"
+  from_port = 0
+  to_port = 0
+  cidr_blocks = [ each.key ]
+  }
+
+
 resource "aws_subnet" "management_az1" {
   vpc_id = aws_vpc.bigip_sandwich.id
   cidr_block = cidrsubnet(var.vpc_ipv4_cidr,8,10)
   availability_zone = local.aws_az1
-  ipv6_cidr_block = "${cidrsubnet(aws_vpc.bigip_sandwich.ipv6_cidr_block, 8, 1)}"
+  ipv6_cidr_block = "${cidrsubnet(aws_vpc.bigip_sandwich.ipv6_cidr_block, 8, 10)}"
   assign_ipv6_address_on_creation = true
   tags = {
     Name = "${var.project_prefix}-management-az1-${random_id.build_suffix.hex}"
@@ -190,7 +197,7 @@ resource "aws_subnet" "management_az2" {
   vpc_id = aws_vpc.bigip_sandwich.id
   cidr_block = cidrsubnet(var.vpc_ipv4_cidr,8,20)
   availability_zone = local.aws_az2
-  ipv6_cidr_block = "${cidrsubnet(aws_vpc.bigip_sandwich.ipv6_cidr_block, 8, 2)}"
+  ipv6_cidr_block = "${cidrsubnet(aws_vpc.bigip_sandwich.ipv6_cidr_block, 8, 20)}"
   assign_ipv6_address_on_creation = true
   tags = {
     Name = "${var.project_prefix}-management-az2-${random_id.build_suffix.hex}"
@@ -201,7 +208,7 @@ resource "aws_subnet" "client_az1" {
   vpc_id = aws_vpc.bigip_sandwich.id
   cidr_block = cidrsubnet(var.vpc_ipv4_cidr,8,11)
   availability_zone = local.aws_az1
-  ipv6_cidr_block = "${cidrsubnet(aws_vpc.bigip_sandwich.ipv6_cidr_block, 8, 3)}"
+  ipv6_cidr_block = "${cidrsubnet(aws_vpc.bigip_sandwich.ipv6_cidr_block, 8, 11)}"
   assign_ipv6_address_on_creation = true
   tags = {
     Name = "${var.project_prefix}-client-az1-${random_id.build_suffix.hex}"
@@ -212,7 +219,7 @@ resource "aws_subnet" "client_az2" {
   vpc_id = aws_vpc.bigip_sandwich.id
   cidr_block = cidrsubnet(var.vpc_ipv4_cidr,8,21)
   availability_zone = local.aws_az2
-  ipv6_cidr_block = "${cidrsubnet(aws_vpc.bigip_sandwich.ipv6_cidr_block, 8, 20)}"
+  ipv6_cidr_block = "${cidrsubnet(aws_vpc.bigip_sandwich.ipv6_cidr_block, 8, 21)}"
   assign_ipv6_address_on_creation = true
   tags = {
     Name = "${var.project_prefix}-client_az2-${random_id.build_suffix.hex}"
@@ -223,7 +230,7 @@ resource "aws_subnet" "server_az1" {
   vpc_id = aws_vpc.bigip_sandwich.id
   cidr_block = cidrsubnet(var.vpc_ipv4_cidr,8,12)
   availability_zone = local.aws_az1
-  ipv6_cidr_block = "${cidrsubnet(aws_vpc.bigip_sandwich.ipv6_cidr_block, 8, 4)}"
+  ipv6_cidr_block = "${cidrsubnet(aws_vpc.bigip_sandwich.ipv6_cidr_block, 8, 12)}"
   assign_ipv6_address_on_creation = true
   tags = {
     Name = "${var.project_prefix}-server-az1-${random_id.build_suffix.hex}"
@@ -234,13 +241,57 @@ resource "aws_subnet" "server_az2" {
   vpc_id = aws_vpc.bigip_sandwich.id
   cidr_block = cidrsubnet(var.vpc_ipv4_cidr,8,22)
   availability_zone = local.aws_az2
-  ipv6_cidr_block = "${cidrsubnet(aws_vpc.bigip_sandwich.ipv6_cidr_block, 8, 30)}"
+  ipv6_cidr_block = "${cidrsubnet(aws_vpc.bigip_sandwich.ipv6_cidr_block, 8, 22)}"
   assign_ipv6_address_on_creation = true
   tags = {
     Name = "${var.project_prefix}-server-az2-${random_id.build_suffix.hex}"
-  }
-  
+  }  
 }
+
+resource "aws_subnet" "security_zone_in_az1" {
+  vpc_id = aws_vpc.bigip_sandwich.id
+  cidr_block = cidrsubnet(var.vpc_ipv4_cidr,8,13)
+  availability_zone = local.aws_az1
+  ipv6_cidr_block = "${cidrsubnet(aws_vpc.bigip_sandwich.ipv6_cidr_block, 8, 13)}"
+  assign_ipv6_address_on_creation = true
+  tags = {
+    Name = "${var.project_prefix}-security-zone-in-az1-${random_id.build_suffix.hex}"
+  }
+}
+
+resource "aws_subnet" "security_zone_in_az2" {
+  vpc_id = aws_vpc.bigip_sandwich.id
+  cidr_block = cidrsubnet(var.vpc_ipv4_cidr,8,23)
+  availability_zone = local.aws_az2
+  ipv6_cidr_block = "${cidrsubnet(aws_vpc.bigip_sandwich.ipv6_cidr_block, 8, 23)}"
+  assign_ipv6_address_on_creation = true
+  tags = {
+    Name = "${var.project_prefix}-security-zone-in-az2-${random_id.build_suffix.hex}"
+  }  
+}
+
+resource "aws_subnet" "security_zone_out_az1" {
+  vpc_id = aws_vpc.bigip_sandwich.id
+  cidr_block = cidrsubnet(var.vpc_ipv4_cidr,8,14)
+  availability_zone = local.aws_az1
+  ipv6_cidr_block = "${cidrsubnet(aws_vpc.bigip_sandwich.ipv6_cidr_block, 8, 14)}"
+  assign_ipv6_address_on_creation = true
+  tags = {
+    Name = "${var.project_prefix}-security-zone-out-az1-${random_id.build_suffix.hex}"
+  }
+}
+
+resource "aws_subnet" "security_zone_out_az2" {
+  vpc_id = aws_vpc.bigip_sandwich.id
+  cidr_block = cidrsubnet(var.vpc_ipv4_cidr,8,24)
+  availability_zone = local.aws_az2
+  ipv6_cidr_block = "${cidrsubnet(aws_vpc.bigip_sandwich.ipv6_cidr_block, 8, 24)}"
+  assign_ipv6_address_on_creation = true
+  tags = {
+    Name = "${var.project_prefix}-security-zone-out-az2-${random_id.build_suffix.hex}"
+  }  
+}
+
 resource "aws_internet_gateway" "bigip_sandwich" {
   vpc_id = aws_vpc.bigip_sandwich.id
   tags = {
@@ -252,11 +303,11 @@ resource "aws_default_route_table" "bigip_sandwich" {
   default_route_table_id = aws_vpc.bigip_sandwich.default_route_table_id
   route {
     cidr_block = "0.0.0.0/0"
-    gateway_id = aws_internet_gateway.bigip_sandwich.id
+    network_interface_id = aws_internet_gateway.bigip_sandwich.id
   }
   route {
     ipv6_cidr_block = "::/0"
-    gateway_id = aws_internet_gateway.bigip_sandwich.id
+    network_interface_id = aws_internet_gateway.bigip_sandwich.id
   }
   tags = {
     Name = "${var.project_prefix}-bigip_sandwich-${random_id.build_suffix.hex}"
@@ -266,22 +317,16 @@ resource "aws_default_route_table" "bigip_sandwich" {
 
 resource "aws_route_table" "client_routes_az1" {
 
+  vpc_id = aws_vpc.bigip_sandwich.id
+
   route {
     cidr_block = aws_subnet.server_az1.cidr_block
-    gateway_id = aws_network_interface.bigip_az1_client.id
-    tags = {
-      Name = "${var.project_prefix}-client-to-server-via-bigip-az1-ipv4-${random_id.build_suffix.hex}"
-    }
+    network_interface_id = aws_network_interface.bigip_az1_client.id
   }
 
   route {
     ipv6_cidr_block = aws_subnet.client_az1.ipv6_cidr_block
-    gateway_id = aws_network_interface.bigip_az1_client.id
-
-    tags = {
-      Name = "${var.project_prefix}-client-to-server-via-bigip-az1-ipv6-${random_id.build_suffix.hex}"
-    }
-
+    network_interface_id = aws_network_interface.bigip_az1_client.id
   }
 
   tags = {
@@ -292,22 +337,16 @@ resource "aws_route_table" "client_routes_az1" {
 
 resource "aws_route_table" "server_routes_az1" {
 
+  vpc_id = aws_vpc.bigip_sandwich.id
+
   route {
     cidr_block = aws_subnet.client_az1.cidr_block
-    gateway_id = aws_network_interface.bigip_az1_server.id
-    tags = {
-      Name = "${var.project_prefix}-server-to-client-via-bigip-az1-ipv4-${random_id.build_suffix.hex}"
-    }
+    network_interface_id = aws_network_interface.bigip_az1_server.id
   }
 
   route {
-    ipv6_cidr_block = aws_subnet.server_az1.ipv6_cidr_block
-    gateway_id = aws_network_interface.bigip_az1_server.id
-
-    tags = {
-      Name = "${var.project_prefix}-server-to-client-via-bigip-az1-ipv6-${random_id.build_suffix.hex}"
-    }
-
+    ipv6_cidr_block = aws_subnet.client_az1.ipv6_cidr_block
+    network_interface_id = aws_network_interface.bigip_az1_server.id
   }
 
   tags = {
@@ -318,21 +357,16 @@ resource "aws_route_table" "server_routes_az1" {
 
 resource "aws_route_table" "client_routes_az2" {
 
+  vpc_id = aws_vpc.bigip_sandwich.id
+
   route {
     cidr_block = aws_subnet.server_az2.cidr_block
-    gateway_id = aws_network_interface.bigip_az2_client.id
-    tags = {
-      Name = "${var.project_prefix}-client-to-server-via-bigip-az2-ipv4-${random_id.build_suffix.hex}"
-    }
+    network_interface_id = aws_network_interface.bigip_az2_client.id
   }
 
   route {
-    ipv6_cidr_block = aws_subnet.client_az2.ipv6_cidr_block
-    gateway_id = aws_network_interface.bigip_az2_client.id
-
-    tags = {
-      Name = "${var.project_prefix}-client-to-server-via-bigip-az2-ipv6-${random_id.build_suffix.hex}"
-    }
+    ipv6_cidr_block = aws_subnet.server_az2.ipv6_cidr_block
+    network_interface_id = aws_network_interface.bigip_az2_client.id
   }
 
   tags = {
@@ -343,21 +377,16 @@ resource "aws_route_table" "client_routes_az2" {
 
 resource "aws_route_table" "server_routes_az2" {
 
+  vpc_id = aws_vpc.bigip_sandwich.id
+
   route {
     cidr_block = aws_subnet.client_az2.cidr_block
-    gateway_id = aws_network_interface.bigip_az2_server.id
-    tags = {
-      Name = "${var.project_prefix}-server-to-client-via-bigip-az2-ipv4-${random_id.build_suffix.hex}"
-    }
+    network_interface_id = aws_network_interface.bigip_az2_client.id
   }
 
   route {
     ipv6_cidr_block = aws_subnet.client_az2.ipv6_cidr_block
-    gateway_id = aws_network_interface.bigip_az2_server.id
-
-    tags = {
-      Name = "${var.project_prefix}-server-to-client-via-bigip-az2-ipv6-${random_id.build_suffix.hex}"
-    }
+    network_interface_id = aws_network_interface.bigip_az2_server.id
   }
 
   tags = {
@@ -367,10 +396,8 @@ resource "aws_route_table" "server_routes_az2" {
 }
 
 resource "aws_route_table_association" "client-az1" {
-
   subnet_id = aws_subnet.client_az1.id
   route_table_id = aws_route_table.client_routes_az1.id
-
 }
 
 resource "aws_route_table_association" "server-az1" {
@@ -417,7 +444,7 @@ resource "aws_network_interface" "bigip_az1_client" {
   tags = {
     Name = "${var.project_prefix}-bigip_az1_client-${random_id.build_suffix.hex}"
     f5_cloud_failover_label = "f5_cloud_failover-${random_id.build_suffix.hex}"
-    f5_cloud_failover_nic_map = "data"
+    f5_cloud_failover_nic_map = "client"
   }
 }
 
@@ -427,7 +454,27 @@ resource "aws_network_interface" "bigip_az1_server" {
   tags = {
     Name = "${var.project_prefix}-bigip_az1_server-${random_id.build_suffix.hex}"
     f5_cloud_failover_label = "f5_cloud_failover-${random_id.build_suffix.hex}"
-    f5_cloud_failover_nic_map = "data"
+    f5_cloud_failover_nic_map = "server"
+  }
+}
+
+resource "aws_network_interface" "bigip_az1_security_zone_in" {
+  source_dest_check = false
+  subnet_id = aws_subnet.security_zone_in_az1.id
+  tags = {
+    Name = "${var.project_prefix}-bigip-az1-security-zone-in-${random_id.build_suffix.hex}"
+    f5_cloud_failover_label = "f5_cloud_failover-${random_id.build_suffix.hex}"
+    f5_cloud_failover_nic_map = "security-zone-in"
+  }
+}
+
+resource "aws_network_interface" "bigip_az1_security_zone_out" {
+  source_dest_check = false
+  subnet_id = aws_subnet.security_zone_out_az1.id
+  tags = {
+    Name = "${var.project_prefix}-bigip-az1-security-zone-out-${random_id.build_suffix.hex}"
+    f5_cloud_failover_label = "f5_cloud_failover-${random_id.build_suffix.hex}"
+    f5_cloud_failover_nic_map = "security-zone-out"
   }
 }
 
@@ -487,6 +534,14 @@ resource "aws_instance" "bigip_az1" {
     network_interface_id = aws_network_interface.bigip_az1_server.id
     device_index = 2
   }
+  network_interface {
+    network_interface_id = aws_network_interface.bigip_az1_security_zone_in.id
+    device_index = 3 
+  }
+  network_interface {
+    network_interface_id = aws_network_interface.bigip_az1_security_zone_out.id
+    device_index = 4
+  }
   # Let's ensure an EIP is provisioned so licensing and bigip-runtime-init runs successfully
   depends_on = [
     aws_eip.bigip_az1_mgmt
@@ -529,6 +584,25 @@ resource "aws_network_interface" "bigip_az2_server" {
   }
 }
 
+resource "aws_network_interface" "bigip_az2_security_zone_in" {
+  source_dest_check = false
+  subnet_id = aws_subnet.security_zone_in_az2.id
+  tags = {
+    Name = "${var.project_prefix}-bigip-az2-security-zone-in-${random_id.build_suffix.hex}"
+    f5_cloud_failover_label = "f5_cloud_failover-${random_id.build_suffix.hex}"
+    f5_cloud_failover_nic_map = "security-zone-in"
+  }
+}
+
+resource "aws_network_interface" "bigip_az2_security_zone_out" {
+  source_dest_check = false
+  subnet_id = aws_subnet.security_zone_out_az2.id
+  tags = {
+    Name = "${var.project_prefix}-bigip-az2-security-zone-out-${random_id.build_suffix.hex}"
+    f5_cloud_failover_label = "f5_cloud_failover-${random_id.build_suffix.hex}"
+    f5_cloud_failover_nic_map = "security-zone-out"
+  }
+}
 resource "aws_eip" "bigip_az2_mgmt" {
   domain = "vpc"
   network_interface = aws_network_interface.bigip_az2_mgmt.id
@@ -584,6 +658,14 @@ resource "aws_instance" "bigip_az2" {
   network_interface {
     network_interface_id = aws_network_interface.bigip_az2_server.id
     device_index = 2
+  }
+  network_interface {
+    network_interface_id = aws_network_interface.bigip_az2_security_zone_in.id
+    device_index = 3 
+  }
+  network_interface {
+    network_interface_id = aws_network_interface.bigip_az2_security_zone_out.id
+    device_index = 4
   }
   # Let's ensure an EIP is provisioned so licensing and bigip-runtime-init runs successfully
   depends_on = [
@@ -641,8 +723,6 @@ resource "aws_instance" "client_az1" {
               sudo apt -y install docker-ce docker-compose certbot gnupg-agent
               sudo usermod -aG docker ubuntu
               sudo openssl req -new -newkey rsa:4096 -x509 -sha256 -days 365 -nodes -out /etc/ssl/ctfd.crt -keyout /etc/ssl/ctfd.key
-              sudo curl -OLJ "https://raw.githubusercontent.com/tghosth/CTFd-docker-deploy/master/docker-compose-production.yml"
-              sudo curl -OLJ "https://raw.githubusercontent.com/tghosth/CTFd-docker-deploy/master/nginx.conf"
               docker-compose -f docker-compose-production.yml up -d
               docker pull bkimminich/juice-shop
               docker run -d -p 80:3000 --restart unless-stopped bkimminich/juice-shop

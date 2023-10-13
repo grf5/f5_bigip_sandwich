@@ -1,0 +1,254 @@
+#!/bin/bash -x
+
+# Send output to log file and serial console
+mkdir -p  /var/log/cloud /config/cloud /var/config/rest/downloads
+LOG_FILE=/var/log/cloud/startup-script.log
+[[ ! -f $LOG_FILE ]] && touch $LOG_FILE || { echo "Run Only Once. Exiting"; exit; }
+npipe=/tmp/$$.tmp
+trap "rm -f $npipe" EXIT
+mknod $npipe p
+tee <$npipe -a $LOG_FILE /dev/ttyS0 &
+exec 1>&-
+exec 1>$npipe
+exec 2>&1
+
+# Run Immediately Before MCPD starts
+/usr/bin/setdb provision.extramb 1000 || true
+/usr/bin/setdb restjavad.useextramb true || true
+/usr/bin/setdb iapplxrpm.timeout 300 || true
+/usr/bin/setdb icrd.timeout 180 || true
+/usr/bin/setdb restjavad.timeout 180 || true
+/usr/bin/setdb restnoded.timeout 180 || true
+
+# runtime init configuration
+cat << "EOF" > /config/cloud/cloud_config.yaml
+---
+controls:
+  logLevel: silly
+  logFilename: /var/log/cloud/big-ip-runtime-init.log
+  logToJson: false
+  extensionInstallDelayInMs: 30000
+runtime_parameters:
+  - name: HOST_NAME
+    type: metadata
+    metadataProvider:
+      environment: aws
+      type: uri
+      value: /latest/meta-data/hostname
+  - name: AVAILABILITY_ZONE
+    type: metadata
+    metadataProvider:
+      environment: aws
+      type: uri
+      value: /latest/meta-data/placement/availability-zone
+  - name: MGMT_IP
+    type: metadata
+    metadataProvider: 
+      environment: aws
+      type: network
+      field: local-ipv4s
+      index: 0
+  - name: MGMT_GATEWAY
+    type: metadata
+    metadataProvider:
+      environment: aws
+      type: network
+      field: local-ipv4s
+      index: 0
+      ipcalc: first
+  - name: CLIENT_IP
+    type: metadata
+    metadataProvider: 
+      environment: aws
+      type: network
+      field: local-ipv4s
+      index: 1
+  - name: CLIENT_GATEWAY
+    type: metadata
+    metadataProvider:
+      environment: aws
+      type: network
+      field: local-ipv4s
+      index: 1
+      ipcalc: first
+  - name: SERVER_IP
+    type: metadata
+    metadataProvider: 
+      environment: aws
+      type: network
+      field: local-ipv4s
+      index: 2
+  - name: SECURITY_ZONE_IN_IP
+    type: metadata
+    metadataProvider: 
+      environment: aws
+      type: network
+      field: local-ipv4s
+      index: 3
+  - name: SECURITY_ZONE_OUT_IP
+    type: metadata
+    metadataProvider: 
+      environment: aws
+      type: network
+      field: local-ipv4s
+      index: 4
+extension_packages:
+  install_operations:
+    - extensionType: do
+      extensionVersion: ${f5_do_version}
+    - extensionType: as3
+      extensionVersion: ${f5_as3_version}
+    - extensionType: ts
+      extensionVersion: ${f5_ts_version}
+    - extensionType: cf
+      extensionVersion: ${f5_cf_version}
+extension_services:
+  service_operations:
+    - extensionType: do
+      type: inline
+      value: 
+        schemaVersion: ${f5_do_schema_version}
+        class: Device
+        async: true
+        label: F5 BIG-IP Onboarding
+        Common:
+          class: Tenant
+          systemConfig:
+            class: System
+            cliInactivityTimeout: 3600
+            consoleInactivityTimeout: 3600
+            hostname: "{{{ HOST_NAME }}}"
+          sshdConfig:
+            class: SSHD
+            inactivityTimeout: 3600
+            protocol: 2
+          customDbVars:
+            class: DbVariables
+            ui.system.preferences.recordsperscreen: 250
+            ui.system.preferences.advancedselection: advanced
+            ui.advisory.enabled: true
+            ui.advisory.color: blue
+            ui.advisory.text: "F5 BIG-IP AWS ({{{AVAILABILITY_ZONE }}})"
+          nameServers:
+            class: DNS
+            nameServers: 
+              - 8.8.8.8
+              - 8.8.4.4
+              - 1.1.1.1
+              - 1.2.2.1
+          ntpConfiguration:
+            class: NTP
+            servers:
+              - 169.254.169.123
+              - 0.pool.ntp.org
+              - 1.pool.ntp.org
+              - 2.pool.ntp.org
+            timezone: EST
+          Provisioning:
+            class: Provision
+            ltm: nominal
+          admin:
+            class: User
+            userType: regular
+            password: ${bigip_admin_password}
+            shell: bash
+          client-vlan:
+            class: VLAN
+            interfaces:
+              - name: '1.1'
+                tagged: false
+            mtu: 1500
+          server-vlan:
+            class: VLAN
+            interfaces:
+              - name: '1.2'
+                tagged: false
+            mtu: 1500
+          security-zone-in-vlan:
+            class: VLAN
+            interfaces:
+              - name: '1.3'
+                tagged: false
+          security-zone-out-vlan:
+            class: VLAN
+            interfaces:
+              - name: '1.4'
+                tagged: false          
+          client-self:
+            class: SelfIp
+            address: "{{{ CLIENT_IP }}}"
+            vlan: client-vlan
+            allowService: all
+            trafficGroup: traffic-group-local-only
+          server-self:
+            class: SelfIp
+            address: "{{{ SERVER_IP }}}"
+            vlan: server-vlan
+            allowService: all
+            trafficGroup: traffic-group-local-only
+          security-zone-in-self:
+            class: SelfIp
+            address: "{{{ SECURITY_ZONE_IN_IP }}}"
+            vlan: security-zone-in-vlan
+            allowService: all
+            trafficGroup: traffic-group-local-only
+          security-zone-out-self:
+            class: SelfIp
+            address: "{{{ SECURITY_ZONE_OUT_IP }}}"
+            vlan: security-zone-out-vlan
+            allowService: all
+            trafficGroup: traffic-group-local-only
+          client-default-route:
+            class: Route
+            gw: "{{{ CLIENT_GATEWAY }}}"
+            network: default
+            mtu: 1500
+            localOnly: true
+          configSync:
+            class: ConfigSync
+            configsyncIp: /Common/server-self/address
+          failoverAddress:
+            class: FailoverUnicast
+            address: /Common/server-self/address
+          failoverGroup:
+            class: DeviceGroup
+            type: sync-failover
+            members:
+              - ${cm_primary_ip}
+              - ${cm_secondary_ip}
+            owner: /Common/failoverGroup/members/0
+            autoSync: true
+            saveOnAutoSync: true
+            networkFailover: true
+            fullLoadOnSync: false
+            asmSync: false
+          trust:
+            class: DeviceTrust
+            localUsername: admin
+            localPassword: ${bigip_admin_password}
+            remoteHost: ${cm_peer_ip}
+            remoteUsername: admin
+            remotePassword: ${bigip_admin_password}
+post_onboard_enabled:
+  - name: save_config
+    type: inline
+    commands:
+    - tmsh save sys config
+EOF
+
+# Add licensing if necessary
+if [ "${bigip_license_type}" == "BYOL" ]; then
+  printf "bigip_ready_enabled:\n  - name: licensing\n    type: inline\n    commands:\n      - tmsh install sys license registration-key ${bigip_license}\n" >> /config/cloud/cloud_config.yaml
+fi
+
+# Download the f5-bigip-runtime-init package
+# 30 attempts, 10 second timeout and 5 second pause between attempts
+for i in {1..30}; do
+    curl -fv --retry 1 --connect-timeout 10 -L https://cdn.f5.com/product/cloudsolutions/f5-bigip-runtime-init/v1.6.2/dist/f5-bigip-runtime-init-1.6.2-1.gz.run -o /var/config/rest/downloads/f5-bigip-runtime-init-1.6.2-1.gz.run && break || sleep 5
+done
+
+# Execute the installer
+bash /var/config/rest/downloads/f5-bigip-runtime-init-1.6.2-1.gz.run -- "--cloud aws"
+
+# Runtime Init execution on configuration file created above
+f5-bigip-runtime-init --config-file /config/cloud/cloud_config.yaml

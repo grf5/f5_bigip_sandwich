@@ -1,0 +1,13 @@
+# Sets the resource owner tag on all objects
+resource_owner        = "adc-team"
+# AWS regiion in which to deploy
+aws_region            = "us-east-2"
+# For projectPrefix, shorter is better. Aim for 8 or less.
+project_prefix        = "f5-bigip"
+# set the license type to BYOL or PAYG
+bigip_license_type     = "PAYG"
+# set a valid license key if BYOL; otherwise this value is ignored
+bigip_license_az1      = "PAYG"
+bigip_license_az2      = "PAYG"
+# Set the admin user password
+bigip_admin_password   = "f5labpassword!"
