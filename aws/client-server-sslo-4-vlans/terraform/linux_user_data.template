@@ -23,5 +23,5 @@ write_files:
       }
 
 runcmd:
-  - sudo openssl req -newkey rsa:4096 -x509 -sha256 -days 365 -nodes -out /etc/ssl/certs/www-lab-local.crt -keyout /etc/ssl/private/www-lab-local.key -subj "/C=Lake Mary/ST=Florida/L=US/O=Sales Engineering/OU=Sales/CN=www.lab.local"
+  - sudo openssl req -newkey rsa:4096 -x509 -sha256 -days 365 -nodes -out /etc/ssl/certs/www-lab-local.crt -keyout /etc/ssl/private/www-lab-local.key -subj "/C=US/ST=Washington/L=Seattle/O=F5/OU=Sales/CN=www.lab.local"
   - sudo systemctl enable --now nginx
