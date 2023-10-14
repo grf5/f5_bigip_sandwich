@@ -21,13 +21,22 @@ exec 2>&1
 /usr/bin/setdb restnoded.timeout 180 || true
 
 # runtime init configuration
+# appdata resize is due to urldb provisioning, see https://my.f5.com/manage/s/article/K13355459
 cat << "EOF" > /config/cloud/cloud_config.yaml
 ---
 controls:
   logLevel: silly
   logFilename: /var/log/cloud/big-ip-runtime-init.log
   logToJson: false
-  extensionInstallDelayInMs: 30000
+  extensionInstallDelayInMs: 15000
+pre_onboard_enabled:
+  - name: lvextend_appdata
+    type: inline
+    commands:
+      - umount /appdata
+      - systemctl restart jitterentropy-rngd
+      - lvextend --resizefs --size 41G /dev/vg-db-vda/dat.appdata
+      - mount /dev/vg-db-vda/dat.appdata /appdata/
 runtime_parameters:
   - name: HOST_NAME
     type: metadata
@@ -147,6 +156,8 @@ extension_services:
           Provisioning:
             class: Provision
             ltm: nominal
+            sslo: nominal
+            urldb: nominal
           admin:
             class: User
             userType: regular
@@ -204,11 +215,6 @@ extension_services:
             network: default
             mtu: 1500
             localOnly: true
-post_onboard_enabled:
-  - name: save_config
-    type: inline
-    commands:
-    - tmsh save sys config
 EOF
 
 # Add licensing if necessary

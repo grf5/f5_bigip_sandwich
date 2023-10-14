@@ -134,8 +134,26 @@ resource "aws_default_security_group" "bigip" {
     to_port = 0
     ipv6_cidr_blocks = [format("%s/%s",data.http.ipv6_address.response_body,128)]
   }
-
-
+  dynamic ingress {
+    for_each = var.additional_management_ipv4_cidr_blocks
+    content{
+      description = "permit IPv4 mgmt traffic from ${ingress.value}"
+      protocol = "-1"
+      from_port = 0
+      to_port = 0
+      cidr_blocks = [ ingress.value ]
+    }
+  }
+  dynamic ingress {
+    for_each = var.additional_management_ipv6_cidr_blocks
+    content{
+      description = "permit IPv6 mgmt traffic from ${ingress.value}"
+      protocol = "-1"
+      from_port = 0
+      to_port = 0
+      cidr_blocks = [ ingress.value ]
+    }
+  }
   egress {
     description = "allow all IPv4 outbound"
     from_port = 0
@@ -156,31 +174,6 @@ resource "aws_default_security_group" "bigip" {
   }
 
 }
-
-resource "aws_security_group_rule" "ipv4_mgmt_cidr_blocks" {
-  
-  for_each = toset( var.additional_management_ipv4_cidr_blocks )
-  security_group_id = aws_default_security_group.bigip.id
-  type = "ingress"
-  description = "permit IPv4 mgmt traffic from ${each.key}"
-  protocol = "-1"
-  from_port = 0
-  to_port = 0
-  cidr_blocks = [ each.key ]
-
-}
-
-resource "aws_security_group_rule" "ipv6_mgmt_cidr_blocks" { 
-  
-  security_group_id = aws_default_security_group.bigip.id
-  for_each = toset( var.additional_management_ipv6_cidr_blocks )
-  type = "ingress"
-  protocol = "-1"
-  from_port = 0
-  to_port = 0
-  cidr_blocks = [ each.key ]
-  }
-
 
 resource "aws_subnet" "management_az1" {
   vpc_id = aws_vpc.bigip_sandwich.id
