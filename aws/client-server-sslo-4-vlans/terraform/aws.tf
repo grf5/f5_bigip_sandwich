@@ -262,29 +262,6 @@ resource "aws_subnet" "security_zone_in_az2" {
     Name = "${var.project_prefix}-security-zone-in-az2-${random_id.build_suffix.hex}"
   }  
 }
-
-resource "aws_subnet" "security_zone_out_az1" {
-  vpc_id = aws_vpc.bigip_sandwich.id
-  cidr_block = cidrsubnet(var.vpc_ipv4_cidr,8,14)
-  availability_zone = local.aws_az1
-  ipv6_cidr_block = "${cidrsubnet(aws_vpc.bigip_sandwich.ipv6_cidr_block, 8, 14)}"
-  assign_ipv6_address_on_creation = true
-  tags = {
-    Name = "${var.project_prefix}-security-zone-out-az1-${random_id.build_suffix.hex}"
-  }
-}
-
-resource "aws_subnet" "security_zone_out_az2" {
-  vpc_id = aws_vpc.bigip_sandwich.id
-  cidr_block = cidrsubnet(var.vpc_ipv4_cidr,8,24)
-  availability_zone = local.aws_az2
-  ipv6_cidr_block = "${cidrsubnet(aws_vpc.bigip_sandwich.ipv6_cidr_block, 8, 24)}"
-  assign_ipv6_address_on_creation = true
-  tags = {
-    Name = "${var.project_prefix}-security-zone-out-az2-${random_id.build_suffix.hex}"
-  }  
-}
-
 resource "aws_internet_gateway" "bigip_sandwich" {
   vpc_id = aws_vpc.bigip_sandwich.id
   tags = {
@@ -501,16 +478,6 @@ resource "aws_network_interface" "bigip_az1_security_zone_in" {
   }
 }
 
-resource "aws_network_interface" "bigip_az1_security_zone_out" {
-  source_dest_check = false
-  subnet_id = aws_subnet.security_zone_out_az1.id
-  tags = {
-    Name = "${var.project_prefix}-bigip-az1-security-zone-out-${random_id.build_suffix.hex}"
-    f5_cloud_failover_label = "f5_cloud_failover-${random_id.build_suffix.hex}"
-    f5_cloud_failover_nic_map = "security-zone-out"
-  }
-}
-
 resource "aws_eip" "bigip_az1_mgmt" {
   domain = "vpc"
   network_interface = aws_network_interface.bigip_az1_mgmt.id
@@ -575,10 +542,6 @@ resource "aws_instance" "bigip_az1" {
     network_interface_id = aws_network_interface.bigip_az1_security_zone_in.id
     device_index = 3 
   }
-  network_interface {
-    network_interface_id = aws_network_interface.bigip_az1_security_zone_out.id
-    device_index = 4
-  }
   # Let's ensure an EIP is provisioned so licensing and bigip-runtime-init runs successfully
   depends_on = [
     aws_eip.bigip_az1_mgmt
@@ -631,15 +594,6 @@ resource "aws_network_interface" "bigip_az2_security_zone_in" {
   }
 }
 
-resource "aws_network_interface" "bigip_az2_security_zone_out" {
-  source_dest_check = false
-  subnet_id = aws_subnet.security_zone_out_az2.id
-  tags = {
-    Name = "${var.project_prefix}-bigip-az2-security-zone-out-${random_id.build_suffix.hex}"
-    f5_cloud_failover_label = "f5_cloud_failover-${random_id.build_suffix.hex}"
-    f5_cloud_failover_nic_map = "security-zone-out"
-  }
-}
 resource "aws_eip" "bigip_az2_mgmt" {
   domain = "vpc"
   network_interface = aws_network_interface.bigip_az2_mgmt.id
@@ -704,10 +658,6 @@ resource "aws_instance" "bigip_az2" {
   network_interface {
     network_interface_id = aws_network_interface.bigip_az2_security_zone_in.id
     device_index = 3 
-  }
-  network_interface {
-    network_interface_id = aws_network_interface.bigip_az2_security_zone_out.id
-    device_index = 4
   }
   # Let's ensure an EIP is provisioned so licensing and bigip-runtime-init runs successfully
   depends_on = [

@@ -94,13 +94,6 @@ runtime_parameters:
       type: network
       field: local-ipv4s
       index: 3
-  - name: SECURITY_ZONE_OUT_IP
-    type: metadata
-    metadataProvider: 
-      environment: aws
-      type: network
-      field: local-ipv4s
-      index: 4
 extension_packages:
   install_operations:
     - extensionType: do
@@ -158,6 +151,7 @@ extension_services:
             ltm: nominal
             sslo: nominal
             urldb: nominal
+            afm: nominal
           admin:
             class: User
             userType: regular
