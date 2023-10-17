@@ -29,11 +29,11 @@ data "http" "ipv4_address" {
   request_headers = var.get_address_request_headers
 }
 
-data "http" "ipv6_address" {
-  # retrieve the local public IPv6 address
-  url = var.get_address_url_ipv6
-  request_headers = var.get_address_request_headers
-}
+# data "http" "ipv6_address" {
+#   # retrieve the local public IPv6 address
+#   url = var.get_address_url_ipv6
+#   request_headers = var.get_address_request_headers
+# }
 
 data "aws_caller_identity" "current" {
   # Get the current AWS caller identity
@@ -127,13 +127,13 @@ resource "aws_default_security_group" "bigip" {
     to_port = 0
     cidr_blocks = [format("%s/%s",data.http.ipv4_address.response_body,32)]
   }
-  ingress {
-    description = "permit IPv6 mgmt traffic from ${var.resource_owner}"
-    protocol = "-1"
-    from_port = 0
-    to_port = 0
-    ipv6_cidr_blocks = [format("%s/%s",data.http.ipv6_address.response_body,128)]
-  }
+  # ingress {
+  #   description = "permit IPv6 mgmt traffic from ${var.resource_owner}"
+  #   protocol = "-1"
+  #   from_port = 0
+  #   to_port = 0
+  #   ipv6_cidr_blocks = [format("%s/%s",data.http.ipv6_address.response_body,128)]
+  # }
   dynamic ingress {
     for_each = var.additional_management_ipv4_cidr_blocks
     content{
@@ -296,11 +296,11 @@ resource "aws_default_route_table" "bigip_sandwich" {
   default_route_table_id = aws_vpc.bigip_sandwich.default_route_table_id
   route {
     cidr_block = "0.0.0.0/0"
-    network_interface_id = aws_internet_gateway.bigip_sandwich.id
+    gateway_id = aws_internet_gateway.bigip_sandwich.id
   }
   route {
     ipv6_cidr_block = "::/0"
-    network_interface_id = aws_internet_gateway.bigip_sandwich.id
+    gateway_id = aws_internet_gateway.bigip_sandwich.id
   }
   tags = {
     Name = "${var.project_prefix}-bigip-sandwich-${random_id.build_suffix.hex}"
