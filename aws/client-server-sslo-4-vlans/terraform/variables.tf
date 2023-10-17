@@ -110,7 +110,7 @@ variable "bigip_ami_mapping" {
   type = map(string)
   default = {
     "BYOL" = "All Modules 2Boot Loc"
-    "PAYG" = "Best 10Gbps"
+    "PAYG" = "Best Plus 25Mbps"
   }
 }
 
