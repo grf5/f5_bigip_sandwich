@@ -281,7 +281,6 @@ resource "aws_default_route_table" "bigip_sandwich" {
   }
   tags = {
     Name = "${var.project_prefix}-bigip-sandwich-${random_id.build_suffix.hex}"
-    f5_cloud_failover_label = "f5_cloud_failover-${random_id.build_suffix.hex}"
   }
 }
 
@@ -453,8 +452,6 @@ resource "aws_network_interface" "bigip_az1_client" {
   subnet_id = aws_subnet.client_az1.id
   tags = {
     Name = "${var.project_prefix}-bigip-az1-client-${random_id.build_suffix.hex}"
-    f5_cloud_failover_label = "f5_cloud_failover-${random_id.build_suffix.hex}"
-    f5_cloud_failover_nic_map = "client"
   }
 }
 
@@ -463,8 +460,6 @@ resource "aws_network_interface" "bigip_az1_server" {
   subnet_id = aws_subnet.server_az1.id
   tags = {
     Name = "${var.project_prefix}-bigip-az1-server-${random_id.build_suffix.hex}"
-    f5_cloud_failover_label = "f5_cloud_failover-${random_id.build_suffix.hex}"
-    f5_cloud_failover_nic_map = "server"
   }
 }
 
@@ -473,8 +468,6 @@ resource "aws_network_interface" "bigip_az1_security_zone_in" {
   subnet_id = aws_subnet.security_zone_in_az1.id
   tags = {
     Name = "${var.project_prefix}-bigip-az1-security-zone-in-${random_id.build_suffix.hex}"
-    f5_cloud_failover_label = "f5_cloud_failover-${random_id.build_suffix.hex}"
-    f5_cloud_failover_nic_map = "security-zone-in"
   }
 }
 
@@ -500,7 +493,6 @@ resource "aws_instance" "bigip_az1" {
     volume_size = 150
   }
   key_name = aws_key_pair.deployer.id
-  iam_instance_profile = "${aws_iam_instance_profile.f5_cloud_failover_instance_profile.name}"
 	user_data = templatefile("${path.module}/bigip_runtime_init_user_data.template",
     {
       bigip_admin_password = "${var.bigip_admin_password}",
@@ -513,17 +505,6 @@ resource "aws_instance" "bigip_az1" {
       f5_ts_version = "${var.f5_ts_version}",
       f5_ts_schema_version = "${var.f5_ts_schema_version}",
       f5_cf_version = "${var.f5_cf_version}",
-      service_address = "${aws_network_interface.bigip_az1_client.private_ip}",
-      cm_failover_group_owner = "${aws_network_interface.bigip_az1_mgmt.private_ip}",
-      cm_primary_ip = "${aws_network_interface.bigip_az1_mgmt.private_ip}",
-      cm_secondary_ip = "${aws_network_interface.bigip_az2_mgmt.private_ip}",
-      cm_peer_ip = "${aws_network_interface.bigip_az2_mgmt.private_ip}",
-      primary_data_ip = "${aws_network_interface.bigip_az1_client.private_ip}",
-      secondary_data_ip = "${aws_network_interface.bigip_az1_client.private_ip}",
-      f5_cloud_failover_label = "f5_cloud_failover-${random_id.build_suffix.hex}",
-      client_subnet_cidr_ipv4 = "${aws_subnet.client_az1.cidr_block}",
-      server_subnet_cidr_ipv4 = "${aws_subnet.server_az1.cidr_block}",
-      s3_bucket = "${var.project_prefix}-f5-cloud-failover-${random_id.build_suffix.hex}"
     }
   )
   network_interface {
@@ -569,8 +550,6 @@ resource "aws_network_interface" "bigip_az2_client" {
   subnet_id = aws_subnet.client_az2.id
   tags = {
     Name = "${var.project_prefix}-bigip-az2-client-${random_id.build_suffix.hex}"
-    f5_cloud_failover_label = "f5_cloud_failover-${random_id.build_suffix.hex}"
-    f5_cloud_failover_nic_map = "data"
   }
 }
 
@@ -579,8 +558,6 @@ resource "aws_network_interface" "bigip_az2_server" {
   subnet_id = aws_subnet.server_az2.id
   tags = {
     Name = "${var.project_prefix}-bigip-az2-server-${random_id.build_suffix.hex}"
-    f5_cloud_failover_label = "f5_cloud_failover-${random_id.build_suffix.hex}"
-    f5_cloud_failover_nic_map = "data"
   }
 }
 
@@ -589,8 +566,6 @@ resource "aws_network_interface" "bigip_az2_security_zone_in" {
   subnet_id = aws_subnet.security_zone_in_az2.id
   tags = {
     Name = "${var.project_prefix}-bigip-az2-security-zone-in-${random_id.build_suffix.hex}"
-    f5_cloud_failover_label = "f5_cloud_failover-${random_id.build_suffix.hex}"
-    f5_cloud_failover_nic_map = "security-zone-in"
   }
 }
 
@@ -616,7 +591,6 @@ resource "aws_instance" "bigip_az2" {
     volume_size = 150
   }
   key_name = aws_key_pair.deployer.id
-  iam_instance_profile = "${aws_iam_instance_profile.f5_cloud_failover_instance_profile.name}"
 
 	user_data = templatefile("${path.module}/bigip_runtime_init_user_data.template",
     {
@@ -630,17 +604,6 @@ resource "aws_instance" "bigip_az2" {
     f5_ts_version = "${var.f5_ts_version}",
     f5_ts_schema_version = "${var.f5_ts_schema_version}",
     f5_cf_version = "${var.f5_cf_version}",
-    service_address = "${aws_network_interface.bigip_az2_client.private_ip}",
-    cm_failover_group_owner = "${aws_network_interface.bigip_az2_mgmt.private_ip}",
-    cm_primary_ip = "${aws_network_interface.bigip_az1_mgmt.private_ip}",
-    cm_secondary_ip = "${aws_network_interface.bigip_az2_mgmt.private_ip}",
-    cm_peer_ip = "${aws_network_interface.bigip_az1_mgmt.private_ip}",
-    primary_data_ip = "${aws_network_interface.bigip_az1_client.private_ip}",
-    secondary_data_ip = "${aws_network_interface.bigip_az2_client.private_ip}",
-    f5_cloud_failover_label = "f5_cloud_failover-${random_id.build_suffix.hex}",
-    client_subnet_cidr_ipv4 = "${aws_subnet.client_az1.cidr_block}",
-    server_subnet_cidr_ipv4 = "${aws_subnet.server_az1.cidr_block}",
-    s3_bucket = "${var.project_prefix}-f5-cloud-failover-${random_id.build_suffix.hex}"
     }
   )
   network_interface {
@@ -763,102 +726,3 @@ resource "aws_instance" "server_az1" {
     Name = "${var.project_prefix}-server-az1-${random_id.build_suffix.hex}"
   }
 }
-
-##
-## F5 Cloud Failover Extension Componenets
-##
-
-data "aws_iam_policy_document" "instance_role" {
-  version = "2012-10-17"
-  statement {
-    actions = ["sts:AssumeRole"]
-
-    principals {
-      type        = "Service"
-      identifiers = ["ec2.amazonaws.com"]
-    }
-  }
-}
-
-data "aws_iam_policy_document" "instance_policy" {
-  version = "2012-10-17"
-  statement {
-    actions = [
-      "ec2:DescribeInstances",
-      "ec2:DescribeInstanceStatus",
-      "ec2:DescribeAddresses",
-      "ec2:DescribeNetworkInterfaces",
-      "ec2:DescribeNetworkInterfaceAttribute",
-      "ec2:DescribeRouteTables",
-      "s3:ListAllMyBuckets",
-      "s3:GetBucketLocation",
-      "ec2:AssociateAddress",
-      "ec2:DisassociateAddress",
-      "ec2:AssignPrivateIpAddresses",
-      "ec2:UnassignPrivateIpAddresses"
-    ]
-    resources = ["*"]
-    effect    = "Allow"
-  }
-  statement {
-    actions = [
-      "ec2:CreateRoute",
-      "ec2:ReplaceRoute"
-    ]
-    resources = ["*"]
-    effect    = "Allow"
-  }
-  statement {
-    actions = [
-      "s3:ListBucket",
-      "s3:GetBucketLocation",
-      "s3:GetBucketTagging"
-    ]
-    resources = [aws_s3_bucket.f5_cloud_failover_configuration.arn]
-    effect    = "Allow"
-  }
-  statement {
-    actions = [
-      "s3:PutObject",
-      "s3:GetObject",
-      "s3:DeleteObject"
-    ]
-    resources = ["${aws_s3_bucket.f5_cloud_failover_configuration.arn}/*"]
-    effect    = "Allow"
-  }
-}
-
-resource "aws_iam_role" "f5_cloud_failover_role" {
-  name = "f5-cloud-failover-role-${random_id.build_suffix.hex}"
-  assume_role_policy = data.aws_iam_policy_document.instance_role.json
-
-  inline_policy {
-    name = "f5-cloud-failover-policy-${random_id.build_suffix.hex}"
-    policy = data.aws_iam_policy_document.instance_policy.json
-  }
-
-  tags = {
-    Name = "${var.project_prefix}-iam-role-${random_id.build_suffix.hex}"
-  }
-
-}
-
-resource "aws_iam_instance_profile" "f5_cloud_failover_instance_profile" {
-  name = "${var.project_prefix}-f5-cloud-failover-instance-role-${random_id.build_suffix.hex}"
-  role = aws_iam_role.f5_cloud_failover_role.name
-  
-  tags = {
-    Name = "${var.project_prefix}-instance-role-${random_id.build_suffix.hex}"
-  }   
-
-}
-
-resource "aws_s3_bucket" "f5_cloud_failover_configuration" {
-  bucket = "${var.project_prefix}-f5-cloud-failover-${random_id.build_suffix.hex}"
-
-  tags = {
-    Name = "${var.project_prefix}-f5-cloud-failover-configuration-${random_id.build_suffix.hex}"
-  }
-
-}
-
