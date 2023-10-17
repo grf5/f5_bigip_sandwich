@@ -241,25 +241,25 @@ resource "aws_subnet" "server_az2" {
   }  
 }
 
-resource "aws_subnet" "security_zone_in_az1" {
+resource "aws_subnet" "security_zone_az1" {
   vpc_id = aws_vpc.bigip_sandwich.id
   cidr_block = cidrsubnet(var.vpc_ipv4_cidr,8,13)
   availability_zone = local.aws_az1
   ipv6_cidr_block = "${cidrsubnet(aws_vpc.bigip_sandwich.ipv6_cidr_block, 8, 13)}"
   assign_ipv6_address_on_creation = true
   tags = {
-    Name = "${var.project_prefix}-security-zone-in-az1-${random_id.build_suffix.hex}"
+    Name = "${var.project_prefix}-security-zone-az1-${random_id.build_suffix.hex}"
   }
 }
 
-resource "aws_subnet" "security_zone_in_az2" {
+resource "aws_subnet" "security_zone_az2" {
   vpc_id = aws_vpc.bigip_sandwich.id
   cidr_block = cidrsubnet(var.vpc_ipv4_cidr,8,23)
   availability_zone = local.aws_az2
   ipv6_cidr_block = "${cidrsubnet(aws_vpc.bigip_sandwich.ipv6_cidr_block, 8, 23)}"
   assign_ipv6_address_on_creation = true
   tags = {
-    Name = "${var.project_prefix}-security-zone-in-az2-${random_id.build_suffix.hex}"
+    Name = "${var.project_prefix}-security-zone-az2-${random_id.build_suffix.hex}"
   }  
 }
 resource "aws_internet_gateway" "bigip_sandwich" {
@@ -463,11 +463,11 @@ resource "aws_network_interface" "bigip_az1_server" {
   }
 }
 
-resource "aws_network_interface" "bigip_az1_security_zone_in" {
+resource "aws_network_interface" "bigip_az1_security_zone" {
   source_dest_check = false
-  subnet_id = aws_subnet.security_zone_in_az1.id
+  subnet_id = aws_subnet.security_zone_az1.id
   tags = {
-    Name = "${var.project_prefix}-bigip-az1-security-zone-in-${random_id.build_suffix.hex}"
+    Name = "${var.project_prefix}-bigip-az1-security-zone-${random_id.build_suffix.hex}"
   }
 }
 
@@ -520,7 +520,7 @@ resource "aws_instance" "bigip_az1" {
     device_index = 2
   }
   network_interface {
-    network_interface_id = aws_network_interface.bigip_az1_security_zone_in.id
+    network_interface_id = aws_network_interface.bigip_az1_security_zone.id
     device_index = 3 
   }
   # Let's ensure an EIP is provisioned so licensing and bigip-runtime-init runs successfully
@@ -561,11 +561,11 @@ resource "aws_network_interface" "bigip_az2_server" {
   }
 }
 
-resource "aws_network_interface" "bigip_az2_security_zone_in" {
+resource "aws_network_interface" "bigip_az2_security_zone" {
   source_dest_check = false
-  subnet_id = aws_subnet.security_zone_in_az2.id
+  subnet_id = aws_subnet.security_zone_az2.id
   tags = {
-    Name = "${var.project_prefix}-bigip-az2-security-zone-in-${random_id.build_suffix.hex}"
+    Name = "${var.project_prefix}-bigip-az2-security-zone-${random_id.build_suffix.hex}"
   }
 }
 
@@ -619,7 +619,7 @@ resource "aws_instance" "bigip_az2" {
     device_index = 2
   }
   network_interface {
-    network_interface_id = aws_network_interface.bigip_az2_security_zone_in.id
+    network_interface_id = aws_network_interface.bigip_az2_security_zone.id
     device_index = 3 
   }
   # Let's ensure an EIP is provisioned so licensing and bigip-runtime-init runs successfully
