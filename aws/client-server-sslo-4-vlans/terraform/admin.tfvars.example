@@ -11,3 +11,5 @@ bigip_license_az1      = "PAYG"
 bigip_license_az2      = "PAYG"
 # Set the admin user password
 bigip_admin_password   = "f5labpassword!"
+# Additional management IPs
+additional_management_ipv4_cidr_blocks = ["12.23.34.45/32","98.87.76.65/32"]
