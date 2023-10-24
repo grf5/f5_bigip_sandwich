@@ -87,13 +87,6 @@ runtime_parameters:
       type: network
       field: local-ipv4s
       index: 2
-  - name: SECURITY_ZONE_IP
-    type: metadata
-    metadataProvider: 
-      environment: aws
-      type: network
-      field: local-ipv4s
-      index: 3
 extension_packages:
   install_operations:
     - extensionType: do
@@ -169,11 +162,6 @@ extension_services:
               - name: '1.2'
                 tagged: false
             mtu: 1500
-          security-zone-vlan:
-            class: VLAN
-            interfaces:
-              - name: '1.3'
-                tagged: false
           client-self:
             class: SelfIp
             address: "{{{ CLIENT_IP }}}"
@@ -184,12 +172,6 @@ extension_services:
             class: SelfIp
             address: "{{{ SERVER_IP }}}"
             vlan: server-vlan
-            allowService: all
-            trafficGroup: traffic-group-local-only
-          security-zone-self:
-            class: SelfIp
-            address: "{{{ SECURITY_ZONE_IP }}}"
-            vlan: security-zone-vlan
             allowService: all
             trafficGroup: traffic-group-local-only
           client-default-route:
